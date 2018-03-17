@@ -12,7 +12,7 @@ public class FutureImpl<T> implements Future<T> {
   private T result;
   private Throwable throwable;
 
-  FutureImpl() {
+  public FutureImpl() {
   }
 
   @Override
