@@ -20,7 +20,7 @@ public class FutureImplTest {
       if (ar.succeeded()) {
         ordered.add(ar.result());
       } else {
-        throw new RuntimeException();
+
       }
     });
 
