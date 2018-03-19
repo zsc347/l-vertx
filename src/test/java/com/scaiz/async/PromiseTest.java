@@ -12,26 +12,46 @@ public class PromiseTest {
 
     t.then(ar -> {
       System.out.println(ar.result());
-      return "sample2";
+      return "schedule-1";
     }).then(ar -> {
       System.out.println(ar.result());
-      return "sample3";
+      return "schedule-2";
     }).then(ar -> {
       System.out.println(ar.result());
       return null;
     });
+
+    future.complete("start");
 
     t.then(ar -> {
       System.out.println(ar.result());
-      return "again 1";
+      return "again-1";
     }).then(ar -> {
       System.out.println(ar.result());
-      return "again 2";
+      return "again-2";
     }).then(ar -> {
       System.out.println(ar.result());
       return null;
     });
 
-    future.complete("sample1");
+
+  }
+
+  @Test
+  public void testResolve() {
+    Promise<String> res = Promise.resolve("resolve");
+    res.then(ar -> {
+      System.out.println(ar.result());
+      return null;
+    });
+  }
+
+  @Test
+  public void testReject() {
+    Promise<String> res = Promise.reject(new RuntimeException("reject"));
+    res.then(ar -> {
+      System.out.println(ar.result());
+      return null;
+    });
   }
 }

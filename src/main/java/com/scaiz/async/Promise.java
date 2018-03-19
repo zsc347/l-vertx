@@ -1,15 +1,13 @@
 package com.scaiz.async;
 
 import com.scaiz.async.impl.FutureImpl;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.function.Function;
 
 public class Promise<T> {
 
   private AsyncResult<T> asyncResult;
   private State state;
-  private List<CallBackEntry> callBacks;
+  private CallBackEntry entryTail;
   private boolean isRunning;
 
   private enum State {
@@ -22,17 +20,15 @@ public class Promise<T> {
 
     private Promise<U> child;
     private Handler<AsyncResult<U>> handler;
-
-    void reset() {
-      child = null;
-      handler = null;
-    }
+    private CallBackEntry<U> next;
   }
 
+  private Promise() {
+    state = State.PENDING;
+  }
 
   Promise(Future<T> future) {
     state = State.PENDING;
-    callBacks = new LinkedList<>();
 
     future.setHandler(ar -> {
       if (ar.succeeded()) {
@@ -69,7 +65,7 @@ public class Promise<T> {
       }
     };
     this.state = State.REJECTED;
-    this.scheduleCallbacks();
+    schedule();
   }
 
 
@@ -99,18 +95,18 @@ public class Promise<T> {
       }
     };
     this.state = State.FULFILLED;
-    this.scheduleCallbacks();
+    schedule();
   }
 
 
-  public <U> Promise<U> resolve(U u) {
-    Promise<U> promise = new Promise<>(null);
+  public static <U> Promise<U> resolve(U u) {
+    Promise<U> promise = new Promise<>();
     promise.doResolve(u);
     return promise;
   }
 
-  public <U> Promise<U> reject(Throwable err) {
-    Promise<U> promise = new Promise<>(null);
+  public static <U> Promise<U> reject(Throwable err) {
+    Promise<U> promise = new Promise<>();
     promise.doReject(err);
     return promise;
   }
@@ -120,51 +116,82 @@ public class Promise<T> {
   }
 
   private <U> Promise<U> addChildPromise(Function<AsyncResult<T>, U> func) {
-    CallBackEntry<U> entry = new CallBackEntry();
+    CallBackEntry<U> entry = new CallBackEntry<>();
 
     Future<U> future = new FutureImpl<>();
     entry.child = new Promise<>(future);
-
     entry.handler = ar -> {
       if (ar.succeeded()) {
-        future.complete(func.apply(this.asyncResult));
+        try {
+          future.complete(func.apply(this.asyncResult));
+        } catch (Throwable err) {
+          future.fail(err);
+        }
       } else {
         future.fail(ar.cause());
       }
     };
 
-    this.addCallbackEntry(entry);
+    addCallbackEntry(entry);
     return entry.child;
   }
 
 
-  private void addCallbackEntry(CallBackEntry entry) {
-    if (!this.hasEntry() && (this.state == State.FULFILLED || this.state == State.REJECTED)) {
-      this.scheduleCallbacks();
+  private synchronized <U> void addCallbackEntry(CallBackEntry<U> entry) {
+    /* if schedule is sync, then this.hasEntry() must be false
+     * schedule will execute nothing because no callback
+     *
+     * if schedule is async, this check ensure schedule will only
+     * be triggered once.
+     */
+    if (!this.hasEntry() && !State.PENDING.equals(this.state)) {
+      schedule();
     }
-    this.queueEntry(entry);
+
+    queueEntry(entry);
+
+    /* if schedule is sync, then isRunning must be false,
+     * entry handler will be run immediately
+     *
+     * if schedule is async, then isRunning must be true,
+     * following won't run again.
+     */
+    if (!this.isRunning && !State.PENDING.equals(this.state)) {
+      schedule();
+    }
   }
 
   private void queueEntry(CallBackEntry entry) {
-    this.callBacks.add(entry);
+    if (this.entryTail == null) {
+      this.entryTail = entry;
+    }
+    entry.next = this.entryTail.next;
+    this.entryTail.next = entry;
+    this.entryTail = entry;
   }
 
-  private void scheduleCallbacks() {
+  private void schedule() {
     if (!this.isRunning) {
       this.isRunning = true;
       Executor.run(this::executeCallbacks);
     }
   }
 
-  private void executeCallbacks() {
-    for (CallBackEntry entry : this.callBacks) {
-      entry.handler.handle(this.asyncResult);
+  @SuppressWarnings("unchecked")
+  private synchronized void executeCallbacks() {
+    if (this.entryTail != null) {
+      CallBackEntry head = this.entryTail.next;
+      while (head != this.entryTail) {
+        head.handler.handle(this.asyncResult);
+        head = head.next;
+      }
+      head.handler.handle(this.asyncResult);
     }
-    this.callBacks = new LinkedList<>();
+    this.entryTail = null;
     this.isRunning = false;
   }
 
   private boolean hasEntry() {
-    return this.callBacks.size() > 0;
+    return this.entryTail != null;
   }
 }
