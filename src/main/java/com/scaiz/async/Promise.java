@@ -2,6 +2,7 @@ package com.scaiz.async;
 
 import com.scaiz.async.impl.FutureImpl;
 import java.util.function.Function;
+import jdk.nashorn.internal.codegen.CompilerConstants.Call;
 
 public class Promise<T> {
 
@@ -111,11 +112,7 @@ public class Promise<T> {
     return promise;
   }
 
-  public <U> Promise<U> then(Function<AsyncResult<T>, U> mapper) {
-    return this.addChildPromise(mapper);
-  }
-
-  private <U> Promise<U> addChildPromise(Function<AsyncResult<T>, U> func) {
+  public <U> Promise<U> then(Function<AsyncResult<T>, U> func) {
     CallBackEntry<U> entry = new CallBackEntry<>();
 
     Future<U> future = new FutureImpl<>();
@@ -136,6 +133,25 @@ public class Promise<T> {
     return entry.child;
   }
 
+  public <U> Promise<U> thenCatch(Function<Throwable, U> func) {
+    CallBackEntry<U> entry = new CallBackEntry<>();
+    Future<U> future = new FutureImpl<>();
+    entry.child = new Promise<>(future);
+
+    entry.handler = ar -> {
+      if (ar.failed()) {
+        try {
+          future.complete(func.apply(ar.cause()));
+        } catch (Throwable err) {
+          future.fail(err);
+        }
+      } else {
+        future.complete(ar.result());
+      }
+    };
+    addCallbackEntry(entry);
+    return entry.child;
+  }
 
   private synchronized <U> void addCallbackEntry(CallBackEntry<U> entry) {
     /* if schedule is sync, then this.hasEntry() must be false

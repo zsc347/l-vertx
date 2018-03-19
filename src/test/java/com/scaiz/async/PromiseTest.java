@@ -40,8 +40,14 @@ public class PromiseTest {
   @Test
   public void testResolve() {
     Promise<String> res = Promise.resolve("resolve");
+
     res.then(ar -> {
-      System.out.println(ar.result());
+      System.out.println("then");
+      return null;
+    });
+
+    res.thenCatch(ar -> {
+      System.out.println("thenCatch");
       return null;
     });
   }
@@ -50,7 +56,12 @@ public class PromiseTest {
   public void testReject() {
     Promise<String> res = Promise.reject(new RuntimeException("reject"));
     res.then(ar -> {
-      System.out.println(ar.result());
+      System.out.println("then");
+      return null;
+    });
+
+    res.thenCatch(ar -> {
+      System.out.println("thenCatch");
       return null;
     });
   }
