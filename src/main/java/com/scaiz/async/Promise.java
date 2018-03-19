@@ -2,7 +2,6 @@ package com.scaiz.async;
 
 import com.scaiz.async.impl.FutureImpl;
 import java.util.function.Function;
-import jdk.nashorn.internal.codegen.CompilerConstants.Call;
 
 public class Promise<T> {
 
@@ -137,7 +136,6 @@ public class Promise<T> {
     CallBackEntry<U> entry = new CallBackEntry<>();
     Future<U> future = new FutureImpl<>();
     entry.child = new Promise<>(future);
-
     entry.handler = ar -> {
       if (ar.failed()) {
         try {

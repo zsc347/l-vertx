@@ -44,6 +44,9 @@ public class PromiseTest {
     res.then(ar -> {
       System.out.println("then");
       return null;
+    }).thenCatch(ar -> {
+      System.out.println("thenCatch");
+      return null;
     });
 
     res.thenCatch(ar -> {
@@ -62,6 +65,9 @@ public class PromiseTest {
 
     res.thenCatch(ar -> {
       System.out.println("thenCatch");
+      return "after cached resolved promise";
+    }).then(ar -> {
+      System.out.println(ar.result());
       return null;
     });
   }
