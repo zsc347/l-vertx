@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -40,7 +41,7 @@ public class Json {
     }
   }
 
-  public static String encodePretty(Object obj) throws EncodeException {
+  public static String encodePrettily(Object obj) throws EncodeException {
     try {
       return mapper.writeValueAsString(obj);
     } catch (JsonProcessingException e) {
