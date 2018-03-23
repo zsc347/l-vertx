@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-public class JsonObject {
+public class JsonObject implements Iterable<Map.Entry<String, Object>> {
 
   private Map<String, Object> map;
 
@@ -39,52 +39,9 @@ public class JsonObject {
     return cs.toString();
   }
 
-  public Integer getInteger(String key) {
+  public Number getNumber(String key) {
     Objects.requireNonNull(key);
-    Number number = (Number) map.get(key);
-    if (number == null) {
-      return null;
-    } else if (number instanceof Integer) {
-      return (Integer) number;
-    } else {
-      return number.intValue();
-    }
-  }
-
-  public Long getLong(String key) {
-    Objects.requireNonNull(key);
-    Number number = (Number) map.get(key);
-    if (number == null) {
-      return null;
-    } else if (number instanceof Long) {
-      return (Long) number;
-    } else {
-      return number.longValue();
-    }
-  }
-
-  public Double getDouble(String key) {
-    Objects.requireNonNull(key);
-    Number number = (Number) map.get(key);
-    if (number == null) {
-      return null;
-    } else if (number instanceof Double) {
-      return (Double) number;
-    } else {
-      return number.doubleValue();
-    }
-  }
-
-  public Float getFloat(String key) {
-    Objects.requireNonNull(key);
-    Number number = (Number) map.get(key);
-    if (number == null) {
-      return null;
-    } else if (number instanceof Float) {
-      return (Float) number;
-    } else {
-      return number.floatValue();
-    }
+    return (Number) map.get(key);
   }
 
   public Boolean getBoolean(String key) {
@@ -148,25 +105,7 @@ public class JsonObject {
     return this;
   }
 
-  public JsonObject put(String key, Integer value) {
-    Objects.requireNonNull(key);
-    map.put(key, value);
-    return this;
-  }
-
-  public JsonObject put(String key, Long value) {
-    Objects.requireNonNull(key);
-    map.put(key, value);
-    return this;
-  }
-
-  public JsonObject put(String key, Double value) {
-    Objects.requireNonNull(key);
-    map.put(key, value);
-    return this;
-  }
-
-  public JsonObject put(String key, Float value) {
+  public JsonObject put(String key, Number value) {
     Objects.requireNonNull(key);
     map.put(key, value);
     return this;
@@ -203,10 +142,14 @@ public class JsonObject {
     return Json.encodePrettily(map);
   }
 
-
   @Override
   public int hashCode() {
     return map.hashCode();
+  }
+
+  @Override
+  public Iterator<Map.Entry<String, Object>> iterator() {
+    return new Iter(map.entrySet().iterator());
   }
 
 
