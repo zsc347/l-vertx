@@ -69,7 +69,10 @@ public class JsonArray implements Iterable<Object> {
     if (this == o) {
       return true;
     }
-    return false;
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    return EqualsHelper.arrayEquals(list, o);
   }
 
   @Override

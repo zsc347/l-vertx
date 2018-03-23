@@ -9,7 +9,7 @@ import java.util.Set;
 
 public class JsonObject implements Iterable<Map.Entry<String, Object>> {
 
-  private Map<String, Object> map;
+  Map<String, Object> map;
 
   public JsonObject() {
     map = new LinkedHashMap<>();
@@ -141,6 +141,20 @@ public class JsonObject implements Iterable<Map.Entry<String, Object>> {
   public String encodePrettily() {
     return Json.encodePrettily(map);
   }
+
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    return EqualsHelper.objectEquals(map, o);
+
+  }
+
 
   @Override
   public int hashCode() {
