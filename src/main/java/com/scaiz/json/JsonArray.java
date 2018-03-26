@@ -27,9 +27,26 @@ public class JsonArray implements Iterable<Object> {
     return cs == null ? null : cs.toString();
   }
 
-  public Number getNumber(int pos) {
-    return (Number) list.get(pos);
+  public Integer getInteger(int pos) {
+    Number number = (Number) list.get(pos);
+    return NumberHelper.toInteger(number);
   }
+
+  public Long getLong(int pos) {
+    Number number = (Number) list.get(pos);
+    return NumberHelper.toLong(number);
+  }
+
+  public Float getFloat(int pos) {
+    Number number = (Number) list.get(pos);
+    return NumberHelper.toFloat(number);
+  }
+
+  public Double getDouble(int pos) {
+    Number number = (Number) list.get(pos);
+    return NumberHelper.toDouble(number);
+  }
+
 
   public Boolean getBoolean(int pos) {
     return (Boolean) list.get(pos);

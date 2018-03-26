@@ -29,7 +29,7 @@ public class JsonObject implements Iterable<Map.Entry<String, Object>> {
         Json.mapper.convertValue(obj, Map.class));
   }
 
-  public <T> T convertTo(Class<T> type) {
+  public <T> T mapTo(Class<T> type) {
     return Json.mapper.convertValue(map, type);
   }
 
@@ -39,10 +39,31 @@ public class JsonObject implements Iterable<Map.Entry<String, Object>> {
     return cs.toString();
   }
 
-  public Number getNumber(String key) {
+  public Integer getInteger(String key) {
     Objects.requireNonNull(key);
-    return (Number) map.get(key);
+    Number number = (Number) map.get(key);
+    return NumberHelper.toInteger(number);
   }
+
+  public Long getLong(String key) {
+    Objects.requireNonNull(key);
+    Number number = (Number) map.get(key);
+    return NumberHelper.toLong(number);
+  }
+
+
+  public Double getDouble(String key) {
+    Objects.requireNonNull(key);
+    Number number = (Number) map.get(key);
+    return NumberHelper.toDouble(number);
+  }
+
+  public Float getFloat(String key) {
+    Objects.requireNonNull(key);
+    Number number = (Number) map.get(key);
+    return NumberHelper.toFloat(number);
+  }
+
 
   public Boolean getBoolean(String key) {
     Objects.requireNonNull(key);
@@ -164,6 +185,20 @@ public class JsonObject implements Iterable<Map.Entry<String, Object>> {
   @Override
   public Iterator<Map.Entry<String, Object>> iterator() {
     return new Iter(map.entrySet().iterator());
+  }
+
+  public JsonObject putNull(String key) {
+    Objects.requireNonNull(key);
+    map.put(key, null);
+    return this;
+  }
+
+  public boolean isEmpty() {
+    return map.isEmpty();
+  }
+
+  public int size() {
+    return map.size();
   }
 
 
