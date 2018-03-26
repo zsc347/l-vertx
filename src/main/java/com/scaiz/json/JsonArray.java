@@ -1,9 +1,11 @@
 package com.scaiz.json;
 
+import com.scaiz.buffer.impl.BufferImpl;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import jdk.internal.org.objectweb.asm.TypeReference;
 
 
 public class JsonArray implements Iterable<Object> {
@@ -16,6 +18,15 @@ public class JsonArray implements Iterable<Object> {
 
   public JsonArray(List list) {
     this.list = list;
+  }
+
+  public JsonArray(BufferImpl buffer) {
+    fromBuffer(buffer);
+  }
+
+  @SuppressWarnings("unchecked")
+  private void fromBuffer(BufferImpl buffer) {
+    list = Json.decode(buffer, List.class);
   }
 
   public List getList() {

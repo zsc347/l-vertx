@@ -1,5 +1,6 @@
 package com.scaiz.json;
 
+import com.scaiz.buffer.impl.BufferImpl;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -17,6 +18,14 @@ public class JsonObject implements Iterable<Map.Entry<String, Object>> {
 
   public JsonObject(Map<String, Object> map) {
     this.map = map;
+  }
+
+  public JsonObject(BufferImpl buffer) {
+    fromBuffer(buffer);
+  }
+
+  private void fromBuffer(BufferImpl buffer) {
+    map = Json.decode(buffer, Map.class);
   }
 
   public Map<String, Object> getMap() {

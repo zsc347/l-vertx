@@ -10,6 +10,10 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
+import com.scaiz.buffer.Buffer;
+import com.scaiz.buffer.impl.BufferImpl;
+import io.netty.buffer.ByteBufInputStream;
+import java.io.DataInput;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
@@ -64,6 +68,16 @@ public class Json {
       return mapper.readValue(str, type);
     } catch (Exception e) {
       throw new DecodeException("Failed to decode " + e.getMessage());
+    }
+  }
+
+  public static <T> T decode(Buffer buf, Class<T> clazz)
+      throws DecodeException {
+    try {
+      return mapper.readValue((DataInput)
+          new ByteBufInputStream(buf.getByteBuf()), clazz);
+    } catch (Exception e) {
+      throw new DecodeException("Failed to decode:" + e.getMessage(), e);
     }
   }
 
