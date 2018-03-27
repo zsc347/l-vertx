@@ -1,6 +1,7 @@
 package com.scaiz.shareddata;
 
-import java.nio.Buffer;
+
+import com.scaiz.buffer.Buffer;
 
 public interface ClusterSerializable {
 

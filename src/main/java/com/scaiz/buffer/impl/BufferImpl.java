@@ -168,7 +168,7 @@ public class BufferImpl implements Buffer {
 
   @Override
   public byte[] getBytes(int start, int end) {
-    assertEndGteStart(end < start);
+    assertEndGteStart(start <= end);
     byte[] arr = new byte[end - start];
     byteBuf.getBytes(start, arr);
     return arr;
@@ -188,14 +188,14 @@ public class BufferImpl implements Buffer {
 
   @Override
   public Buffer getBytes(int start, int end, byte[] dst) {
-    assertEndGteStart(end < start);
+    assertEndGteStart(start <= end);
     byteBuf.getBytes(start, dst, 0, end - start);
     return this;
   }
 
   @Override
   public Buffer getBytes(int start, int end, byte[] dst, int dstIndex) {
-    assertEndGteStart(end < start);
+    assertEndGteStart(start <= end);
     byteBuf.getBytes(start, dst, dstIndex, end - start);
     return this;
   }
@@ -559,5 +559,24 @@ public class BufferImpl implements Buffer {
   @Override
   public ByteBuf getByteBuf() {
     return byteBuf.duplicate();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    BufferImpl oBuffer = (BufferImpl) o;
+    return byteBuf != null
+        ? byteBuf.equals(oBuffer.byteBuf)
+        : oBuffer.byteBuf == null;
+  }
+
+  @Override
+  public int hashCode() {
+    return byteBuf != null ? byteBuf.hashCode() : 0;
   }
 }

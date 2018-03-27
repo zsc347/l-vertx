@@ -6,6 +6,7 @@ import com.scaiz.spi.ServiceHelper;
 import io.netty.buffer.ByteBuf;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.Objects;
 
 public interface Buffer {
 
@@ -22,6 +23,7 @@ public interface Buffer {
   }
 
   static Buffer buffer(String string, String enc) {
+    Objects.requireNonNull(enc);
     return factory.buffer(string, enc);
   }
 
@@ -163,7 +165,6 @@ public interface Buffer {
 
   Buffer setDouble(int pos, double d);
 
-
   Buffer setFloat(int pos, float f);
 
   Buffer setShort(int pos, short s);
@@ -172,37 +173,27 @@ public interface Buffer {
 
   Buffer setUnsignedShort(int pos, int s);
 
-
   Buffer setUnsignedShortLE(int pos, int s);
 
   Buffer setBuffer(int pos, Buffer b);
 
   Buffer setBuffer(int pos, Buffer b, int offset, int len);
 
-
   Buffer setBytes(int pos, ByteBuffer b);
-
 
   Buffer setBytes(int pos, byte[] b);
 
-
   Buffer setBytes(int pos, byte[] b, int offset, int len);
-
 
   Buffer setString(int pos, String str);
 
-
   Buffer setString(int pos, String str, String enc);
-
 
   int length();
 
-
   Buffer copy();
 
-
   Buffer slice();
-
 
   Buffer slice(int start, int end);
 

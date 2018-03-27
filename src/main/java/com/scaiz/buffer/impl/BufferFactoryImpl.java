@@ -3,36 +3,37 @@ package com.scaiz.buffer.impl;
 import com.scaiz.buffer.Buffer;
 import com.scaiz.buffer.BufferFactory;
 import io.netty.buffer.ByteBuf;
+import java.nio.charset.Charset;
 
 public class BufferFactoryImpl implements BufferFactory {
 
   @Override
   public Buffer buffer() {
-    return null;
+    return new BufferImpl();
   }
 
   @Override
   public Buffer buffer(int initialSizeHint) {
-    return null;
+    return new BufferImpl(initialSizeHint);
   }
 
   @Override
   public Buffer buffer(String string) {
-    return null;
+    return new BufferImpl(string);
   }
 
   @Override
   public Buffer buffer(String string, String enc) {
-    return null;
+    return new BufferImpl(string, Charset.forName(enc));
   }
 
   @Override
   public Buffer buffer(byte[] bytes) {
-    return null;
+    return new BufferImpl(bytes);
   }
 
   @Override
   public Buffer buffer(ByteBuf byteBuf) {
-    return null;
+    return new BufferImpl(byteBuf);
   }
 }

@@ -4,15 +4,15 @@ import io.netty.buffer.ByteBuf;
 
 public interface BufferFactory {
 
-  public Buffer buffer();
+  Buffer buffer();
 
-  public Buffer buffer(int initialSizeHint);
+  Buffer buffer(int initialSizeHint);
 
-  public Buffer buffer(String string);
+  Buffer buffer(String string);
 
-  public Buffer buffer(String string, String enc);
+  Buffer buffer(String string, String enc);
 
-  public Buffer buffer(byte[] bytes);
+  Buffer buffer(byte[] bytes);
 
-  public Buffer buffer(ByteBuf byteBuf);
+  Buffer buffer(ByteBuf byteBuf);
 }
