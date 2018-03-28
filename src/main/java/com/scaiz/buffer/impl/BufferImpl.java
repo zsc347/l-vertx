@@ -131,7 +131,7 @@ public class BufferImpl implements Buffer {
 
   @Override
   public int getUnsignedShort(int pos) {
-    return byteBuf.getUnsignedShortLE(pos);
+    return byteBuf.getUnsignedShort(pos);
   }
 
   @Override
@@ -491,10 +491,10 @@ public class BufferImpl implements Buffer {
   }
 
   @Override
-  public Buffer setBuffer(int pos, Buffer b, int offset, int len) {
+  public Buffer setBuffer(int pos, Buffer src, int offset, int len) {
     ensureWritable(pos, len);
-    ByteBuf byteBuf = b.getByteBuf();
-    byteBuf.setBytes(pos, byteBuf, byteBuf.readerIndex() + offset, len);
+    ByteBuf srcBuf = src.getByteBuf();
+    byteBuf.setBytes(pos, srcBuf, srcBuf.readerIndex() + offset, len);
     return this;
   }
 

@@ -5,9 +5,13 @@ import com.scaiz.buffer.Buffer;
 public class BufferTestUtil {
 
   public static boolean byteArraysEqual(byte[] b1, byte[] b2) {
-    if (b1.length != b2.length) return false;
+    if (b1.length != b2.length) {
+      return false;
+    }
     for (int i = 0; i < b1.length; i++) {
-      if (b1[i] != b2[i]) return false;
+      if (b1[i] != b2[i]) {
+        return false;
+      }
     }
     return true;
   }
@@ -49,5 +53,14 @@ public class BufferTestUtil {
       builder.append(c);
     }
     return builder.toString();
+  }
+
+
+  public static void printBuffer(byte[] bytes) {
+    for (byte b : bytes) {
+      System.out.print(b);
+      System.out.print(" ");
+    }
+    System.out.println();
   }
 }

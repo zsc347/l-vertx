@@ -936,18 +936,18 @@ public class BufferTest {
   }
 
   @Test
-  public void testSetBufferWithOffsetAndLen() throws Exception {
+  public void testSetBufferWithOffsetAndLen() {
     testSetBufferWithOffsetAndLen(Buffer::buffer);
   }
 
   @Test
-  public void testSetBufferWithOffsetAndLen2() throws Exception {
+  public void testSetBufferWithOffsetAndLen2() {
     testSetBufferWithOffsetAndLen(PADDED_BUFFER_FACTORY);
   }
 
   private void testSetBufferWithOffsetAndLen(
-      Function<byte[], Buffer> bufferFactory) throws Exception {
-    int bytesLen = 100;
+      Function<byte[], Buffer> bufferFactory) {
+    int bytesLen = 5;
     byte[] bytes = BufferTestUtil.randomByteArray(bytesLen);
     Buffer src = bufferFactory.apply(bytes);
     int len = bytesLen - 2;
@@ -956,6 +956,7 @@ public class BufferTest {
     b.setByte(0, (byte) '0');
     b.setBuffer(1, src, 1, len);
     assertEquals(b.length(), len + 1);
+
     byte[] copy = new byte[len];
     System.arraycopy(bytes, 1, copy, 0, len);
 
