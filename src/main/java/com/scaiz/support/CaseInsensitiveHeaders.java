@@ -1,6 +1,7 @@
 package com.scaiz.support;
 
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -11,8 +12,13 @@ import java.util.TreeSet;
 public class CaseInsensitiveHeaders implements MultiMap {
 
   private static final int BUCKET_SIZE = 17;
+
   private final MapEntry[] entries = new MapEntry[BUCKET_SIZE];
   private final MapEntry head = new MapEntry(-1, null, null);
+
+  public CaseInsensitiveHeaders() {
+    head.next = head.before = head;
+  }
 
   @Override
   public String get(CharSequence name) {
@@ -36,96 +42,210 @@ public class CaseInsensitiveHeaders implements MultiMap {
 
   @Override
   public List<Entry<String, String>> entries() {
-    return null;
+    List<Map.Entry<String, String>> all = new LinkedList<>();
+    MapEntry e = head.after;
+    while (e != head) {
+      all.add(e);
+      e = e.after;
+    }
+    return all;
   }
 
   @Override
   public boolean contains(String name) {
-    return false;
+    return get(name) != null;
   }
 
   @Override
   public boolean contains(CharSequence name) {
-    return false;
+    return get(name) != null;
   }
 
   @Override
   public boolean isEmpty() {
-    return false;
+    return head.after == head;
   }
 
   @Override
   public Set<String> names() {
+    Set<String> names = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+
+    MapEntry e = head.after;
+    while (e != head) {
+      names.add(e.getKey());
+      e = e.after;
+    }
+    return names;
   }
 
   @Override
-  public MultiMap add(String name, String value) {
-    return null;
+  public MultiMap add(String name, String strVal) {
+    Objects.requireNonNull(name);
+    Objects.requireNonNull(strVal);
+    int h = name.hashCode();
+    int i = index(h);
+    add0(h, i, name, strVal);
+    return this;
   }
 
   @Override
   public MultiMap add(CharSequence name, CharSequence value) {
-    return null;
+    return add(name.toString(), value.toString());
   }
 
   @Override
   public MultiMap add(String name, Iterable<String> values) {
-    return null;
+    Objects.requireNonNull(name);
+    int h = name.hashCode();
+    int i = index(h);
+
+    for (String strVal : values) {
+      Objects.requireNonNull(strVal);
+      add0(h, i, name, strVal);
+    }
+    return this;
   }
 
   @Override
   public MultiMap add(CharSequence name, Iterable<CharSequence> values) {
-    return null;
+    Objects.requireNonNull(name);
+    String key = name.toString();
+    int h = key.hashCode();
+    int i = index(h);
+
+    for (CharSequence cs : values) {
+      add0(h, i, key, cs.toString());
+    }
+
+    return this;
   }
 
   @Override
   public MultiMap addAll(MultiMap map) {
-    return null;
+    for (Map.Entry<String, String> entry : map.entries()) {
+      add(entry.getKey(), entry.getValue());
+    }
+    return this;
   }
 
   @Override
   public MultiMap addAll(Map<String, String> headers) {
-    return null;
+    for (Map.Entry<String, String> entry : headers.entrySet()) {
+      add(entry.getKey(), entry.getValue());
+    }
+    return this;
   }
 
+  private void add0(int h, int i, String name, String v) {
+    MapEntry e = entries[i];
+    MapEntry newEntry = new MapEntry(h, name, v);
+    entries[i] = newEntry;
+    newEntry.next = e;
+
+    newEntry.addBefore(head);
+  }
+
+
+  private void remove0(int h, int i, String name) {
+
+  }
+
+  private boolean eq(String name1, String name2) {
+    int nameLen = name1.length();
+    if (nameLen != name2.length()) {
+      return false;
+    }
+
+    for (int i = nameLen - 1; i >= 0; i--) {
+      char c1 = name1.charAt(i);
+      char c2 = name2.charAt(i);
+      if (c1 != c2) {
+        if (c1 >= 'A' && c1 <= 'Z') {
+          c1 += 32;
+        }
+        if (c2 >= 'A' && c2 <= 'Z') {
+          c2 += 32;
+        }
+        if (c1 != c2) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  private int index(int h) {
+    return h % BUCKET_SIZE;
+  }
+
+
   @Override
-  public MultiMap set(String name, String value) {
-    return null;
+  public MultiMap set(String name, String strVal) {
+    int h = name.hashCode();
+    int i = index(h);
+    remove0(h, i, name);
+    add0(h, i, name, strVal);
+    return this;
   }
 
   @Override
   public MultiMap set(CharSequence name, CharSequence value) {
-    return null;
+    return set(name.toString(), value.toString());
   }
 
   @Override
   public MultiMap set(String name, Iterable<String> values) {
-    return null;
+    Objects.requireNonNull(name);
+    Objects.requireNonNull(values, "values");
+
+    int h = name.hashCode();
+    int i = index(h);
+
+    remove0(h, i, name);
+    for (String v : values) {
+      Objects.requireNonNull(v);
+      add0(h, i, name, v);
+    }
+
+    return this;
   }
 
   @Override
   public MultiMap set(CharSequence name, Iterable<CharSequence> values) {
-    return null;
+    remove(name);
+    String n = name.toString();
+    for (CharSequence seq : values) {
+      add(n, seq.toString());
+    }
+    return this;
   }
 
   @Override
   public MultiMap setAll(MultiMap map) {
-    return null;
+    clear();
+    addAll(map);
+    return this;
   }
 
   @Override
   public MultiMap setAll(Map<String, String> headers) {
-    return null;
+    clear();
+    addAll(headers);
+    return this;
   }
 
   @Override
   public MultiMap remove(String name) {
-    return null;
+    Objects.requireNonNull(name);
+    int h = name.hashCode();
+    int i = index(h);
+    remove0(h, i, name);
+    return this;
   }
 
   @Override
   public MultiMap remove(CharSequence name) {
-    return null;
+    return remove(name.toString());
   }
 
   @Override
@@ -144,7 +264,7 @@ public class CaseInsensitiveHeaders implements MultiMap {
 
   @Override
   public Iterator<Entry<String, String>> iterator() {
-    return null;
+    return entries().iterator();
   }
 
   private MultiMap set(Iterable<Map.Entry<String, String>> map) {
@@ -160,6 +280,7 @@ public class CaseInsensitiveHeaders implements MultiMap {
     final int hash;
     final String key;
     String value;
+    MapEntry next;
     MapEntry before, after;
 
     MapEntry(int hash, String key, String value) {
