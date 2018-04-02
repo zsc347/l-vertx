@@ -91,4 +91,8 @@ public class DeliveryOptions {
       headers = new CaseInsensitiveHeaders();
     }
   }
+
+  public MultiMap getHeaders() {
+    return headers;
+  }
 }

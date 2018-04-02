@@ -1,5 +1,6 @@
 package com.scaiz.eventbus;
 
-public class MessageConsumer<T> {
+public interface MessageConsumer<T> {
 
+  public void unRegister();
 }

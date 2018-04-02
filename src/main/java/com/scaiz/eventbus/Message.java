@@ -1,5 +1,6 @@
 package com.scaiz.eventbus;
 
-public class Message<T> {
+public interface Message<T> {
 
+  T body();
 }
