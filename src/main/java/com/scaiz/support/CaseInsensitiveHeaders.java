@@ -17,28 +17,49 @@ public class CaseInsensitiveHeaders implements MultiMap {
   private final MapEntry head = new MapEntry(-1, null, null);
 
   public CaseInsensitiveHeaders() {
-    head.next = head.before = head;
+    head.after = head.before = head;
   }
 
   @Override
   public String get(CharSequence name) {
-    return null;
+    return get(name.toString());
+  }
+
+  @Override
+  public List<String> getAll(CharSequence name) {
+    return getAll(name.toString());
   }
 
   @Override
   public String get(String name) {
+    Objects.requireNonNull(name);
+    int h = hash(name);
+    int i = index(h);
+    MapEntry e = entries[i];
+    while (e != null) {
+      if (e.hash == h && eq(name, e.key)) {
+        return e.getValue();
+      }
+      e = e.next;
+    }
     return null;
   }
 
   @Override
   public List<String> getAll(String name) {
-    return null;
+    LinkedList<String> rs = new LinkedList<>();
+    int h = hash(name);
+    int i = index(h);
+    MapEntry e = entries[i];
+    while (e != null) {
+      if (e.hash == h && eq(name, e.key)) {
+        rs.addFirst(e.getValue());
+      }
+      e = e.next;
+    }
+    return rs;
   }
 
-  @Override
-  public List<String> getAll(CharSequence name) {
-    return null;
-  }
 
   @Override
   public List<Entry<String, String>> entries() {
@@ -82,7 +103,7 @@ public class CaseInsensitiveHeaders implements MultiMap {
   public MultiMap add(String name, String strVal) {
     Objects.requireNonNull(name);
     Objects.requireNonNull(strVal);
-    int h = name.hashCode();
+    int h = hash(name);
     int i = index(h);
     add0(h, i, name, strVal);
     return this;
@@ -96,7 +117,7 @@ public class CaseInsensitiveHeaders implements MultiMap {
   @Override
   public MultiMap add(String name, Iterable<String> values) {
     Objects.requireNonNull(name);
-    int h = name.hashCode();
+    int h = hash(name);
     int i = index(h);
 
     for (String strVal : values) {
@@ -110,7 +131,7 @@ public class CaseInsensitiveHeaders implements MultiMap {
   public MultiMap add(CharSequence name, Iterable<CharSequence> values) {
     Objects.requireNonNull(name);
     String key = name.toString();
-    int h = key.hashCode();
+    int h = hash(key);
     int i = index(h);
 
     for (CharSequence cs : values) {
@@ -147,7 +168,20 @@ public class CaseInsensitiveHeaders implements MultiMap {
 
 
   private void remove0(int h, int i, String name) {
-
+    MapEntry pre = null, e = entries[i];
+    while (e != null) {
+      if (e.hash == h && eq(name, e.key)) {
+        e.remove();
+        if (pre == null) {
+          entries[i] = e.next;
+        } else {
+          pre.next = e.next;
+        }
+      } else {
+        pre = e;
+      }
+      e = e.next;
+    }
   }
 
   private boolean eq(String name1, String name2) {
@@ -178,10 +212,28 @@ public class CaseInsensitiveHeaders implements MultiMap {
     return h % BUCKET_SIZE;
   }
 
+  private static int hash(String name) {
+    int h = 0;
+    for (int i = name.length() - 1; i >= 0; i--) {
+      char c = name.charAt(i);
+      if (c >= 'A' && c <= 'Z') {
+        c += 32;
+      }
+      h = 31 * h + c;
+    }
+
+    if (h > 0) {
+      return h;
+    } else if (h == Integer.MIN_VALUE) {
+      return Integer.MAX_VALUE;
+    } else {
+      return -h;
+    }
+  }
 
   @Override
   public MultiMap set(String name, String strVal) {
-    int h = name.hashCode();
+    int h = hash(name);
     int i = index(h);
     remove0(h, i, name);
     add0(h, i, name, strVal);
@@ -198,13 +250,14 @@ public class CaseInsensitiveHeaders implements MultiMap {
     Objects.requireNonNull(name);
     Objects.requireNonNull(values, "values");
 
-    int h = name.hashCode();
+    int h = hash(name);
     int i = index(h);
 
     remove0(h, i, name);
     for (String v : values) {
-      Objects.requireNonNull(v);
-      add0(h, i, name, v);
+      if (v != null) {
+        add0(h, i, name, v);
+      }
     }
 
     return this;
@@ -237,7 +290,7 @@ public class CaseInsensitiveHeaders implements MultiMap {
   @Override
   public MultiMap remove(String name) {
     Objects.requireNonNull(name);
-    int h = name.hashCode();
+    int h = hash(name);
     int i = index(h);
     remove0(h, i, name);
     return this;
@@ -323,5 +376,14 @@ public class CaseInsensitiveHeaders implements MultiMap {
     public String toString() {
       return getKey() + ": " + getValue();
     }
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    for (Map.Entry<String, String> entry : this) {
+      sb.append(entry).append('\n');
+    }
+    return sb.toString();
   }
 }
