@@ -150,7 +150,7 @@ public class MessageProducerImpl<T> implements MessageProducer<T> {
   @Override
   public void close() {
     if (creditConsumer != null) {
-      creditConsumer.unRegister();
+      creditConsumer.unregister();
     }
   }
 
