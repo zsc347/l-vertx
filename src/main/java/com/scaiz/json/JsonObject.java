@@ -1,6 +1,7 @@
 package com.scaiz.json;
 
 import com.scaiz.buffer.impl.BufferImpl;
+
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,7 +36,7 @@ public class JsonObject implements Iterable<Map.Entry<String, Object>> {
   @SuppressWarnings("unchecked")
   public static JsonObject mapFrom(Object obj) {
     return new JsonObject((Map<String, Object>)
-        Json.mapper.convertValue(obj, Map.class));
+      Json.mapper.convertValue(obj, Map.class));
   }
 
   public <T> T mapTo(Class<T> type) {
@@ -167,11 +168,9 @@ public class JsonObject implements Iterable<Map.Entry<String, Object>> {
     return Json.encode(map);
   }
 
-
   public String encodePrettily() {
     return Json.encodePrettily(map);
   }
-
 
   @Override
   public boolean equals(Object o) {
@@ -182,9 +181,7 @@ public class JsonObject implements Iterable<Map.Entry<String, Object>> {
       return false;
     }
     return EqualsHelper.objectEquals(map, o);
-
   }
-
 
   @Override
   public int hashCode() {
@@ -229,10 +226,10 @@ public class JsonObject implements Iterable<Map.Entry<String, Object>> {
       Map.Entry<String, Object> mapEntry = mapIter.next();
       if (mapEntry.getValue() instanceof Map) {
         return new Entry(mapEntry.getKey(),
-            new JsonObject((Map) mapEntry.getValue()));
+          new JsonObject((Map) mapEntry.getValue()));
       } else if (mapEntry.getValue() instanceof List) {
         return new Entry(mapEntry.getKey(),
-            new JsonArray((List) mapEntry.getValue()));
+          new JsonArray((List) mapEntry.getValue()));
       }
       return new Entry(mapEntry.getKey(), mapEntry.getValue());
     }
