@@ -23,7 +23,7 @@ public interface Future<T> extends AsyncResult<T>, Handler<AsyncResult<T>> {
     return factory.succeededFuture(result);
   }
 
-  static <T> Future<T> failFuture(Throwable t) {
+  static <T> Future<T> failedFuture(Throwable t) {
     return factory.failFuture(t);
   }
 

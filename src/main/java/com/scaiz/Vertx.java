@@ -8,4 +8,8 @@ public interface Vertx {
   void runOnContext(Handler<Void> action);
 
   EventBus eventBus();
+
+  void cancelTimer(long timeoutID);
+  
+  long setTimer(long delay, Handler<Long> handler);
 }
