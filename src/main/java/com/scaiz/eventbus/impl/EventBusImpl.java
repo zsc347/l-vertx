@@ -13,23 +13,27 @@ import com.scaiz.eventbus.MessageProducer;
 import com.scaiz.eventbus.SendContext;
 
 public class EventBusImpl implements EventBus {
+
   @Override
   public EventBus send(String address, Object message) {
     return null;
   }
 
   @Override
-  public <T> EventBus send(String address, Object message, Handler<AsyncResult<Message<T>>> replyHandler) {
+  public <T> EventBus send(String address, Object message,
+      Handler<AsyncResult<Message<T>>> replyHandler) {
     return null;
   }
 
   @Override
-  public EventBus send(String address, Object message, DeliveryOptions options) {
+  public EventBus send(String address, Object message,
+      DeliveryOptions options) {
     return null;
   }
 
   @Override
-  public <T> EventBus send(String address, Object message, DeliveryOptions options, Handler<AsyncResult<Message<T>>> replyHandler) {
+  public <T> EventBus send(String address, Object message,
+      DeliveryOptions options, Handler<AsyncResult<Message<T>>> replyHandler) {
     return null;
   }
 
@@ -39,7 +43,8 @@ public class EventBusImpl implements EventBus {
   }
 
   @Override
-  public EventBus publish(String address, Object message, DeliveryOptions options) {
+  public EventBus publish(String address, Object message,
+      DeliveryOptions options) {
     return null;
   }
 
@@ -49,7 +54,8 @@ public class EventBusImpl implements EventBus {
   }
 
   @Override
-  public <T> MessageConsumer<T> consumer(String address, Handler<Message<T>> handler) {
+  public <T> MessageConsumer<T> consumer(String address,
+      Handler<Message<T>> handler) {
     return null;
   }
 
@@ -59,7 +65,8 @@ public class EventBusImpl implements EventBus {
   }
 
   @Override
-  public <T> MessageConsumer<T> localConsumer(String address, Handler<Message<T>> handler) {
+  public <T> MessageConsumer<T> localConsumer(String address,
+      Handler<Message<T>> handler) {
     return null;
   }
 
@@ -69,7 +76,8 @@ public class EventBusImpl implements EventBus {
   }
 
   @Override
-  public <T> MessageProducer<T> sender(String address, DeliveryOptions options) {
+  public <T> MessageProducer<T> sender(String address,
+      DeliveryOptions options) {
     return null;
   }
 
@@ -79,7 +87,8 @@ public class EventBusImpl implements EventBus {
   }
 
   @Override
-  public <T> MessageProducer<T> publisher(String address, DeliveryOptions options) {
+  public <T> MessageProducer<T> publisher(String address,
+      DeliveryOptions options) {
     return null;
   }
 
@@ -94,7 +103,8 @@ public class EventBusImpl implements EventBus {
   }
 
   @Override
-  public <T> EventBus registerDefaultCodec(Class<T> clazz, MessageCodec<T, ?> codec) {
+  public <T> EventBus registerDefaultCodec(Class<T> clazz,
+      MessageCodec<T, ?> codec) {
     return null;
   }
 
@@ -123,11 +133,13 @@ public class EventBusImpl implements EventBus {
     return null;
   }
 
-  public <T> void removeRegistration(String address, HandlerRegistration<T> registration,
-                                     Handler<AsyncResult<Void>> completionHandler) {
+  public <T> void removeRegistration(String address,
+      HandlerRegistration<T> registration,
+      Handler<AsyncResult<Void>> completionHandler) {
   }
 
-  protected <T> void addRegistration(String address, HandlerRegistration<T> registration,
-                                     boolean replyHandler, boolean localOnly) {
+  protected <T> void addRegistration(String address,
+      HandlerRegistration<T> registration,
+      boolean replyHandler, boolean localOnly) {
   }
 }

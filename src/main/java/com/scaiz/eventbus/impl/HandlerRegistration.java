@@ -15,7 +15,8 @@ import java.util.ArrayDeque;
 import java.util.Objects;
 import java.util.Queue;
 
-public class HandlerRegistration<T> implements MessageConsumer<T>, Handler<Message<T>> {
+public class HandlerRegistration<T> implements MessageConsumer<T>,
+    Handler<Message<T>> {
 
 
   private final int DEFAULT_MAX_BUFFERED_MESSAGES = 1000;
@@ -40,8 +41,8 @@ public class HandlerRegistration<T> implements MessageConsumer<T>, Handler<Messa
 
 
   public HandlerRegistration(Vertx vertx, String address, String repliedAddress,
-                             AsyncResult<Void> result, EventBusImpl eventBus,
-                             Handler<AsyncResult<Message<T>>> asyncResultHandler, long timeout) {
+      AsyncResult<Void> result, EventBusImpl eventBus,
+      Handler<AsyncResult<Message<T>>> asyncResultHandler, long timeout) {
     this.vertx = vertx;
     this.address = address;
     this.repliedAddress = repliedAddress;
@@ -52,10 +53,10 @@ public class HandlerRegistration<T> implements MessageConsumer<T>, Handler<Messa
       timeoutID = vertx.setTimer(timeout, tid -> {
         unregister();
         asyncResultHandler.handle(Future.failedFuture(
-          new ReplyException(ReplyFailure.TIMEOUT,
-            "Timed out after waiting " + timeout
-              + "(ms) for a reply. address: " + address
-              + ", repliedAddress: " + repliedAddress)));
+            new ReplyException(ReplyFailure.TIMEOUT,
+                "Timed out after waiting " + timeout
+                    + "(ms) for a reply. address: " + address
+                    + ", repliedAddress: " + repliedAddress)));
       });
     }
   }
@@ -123,7 +124,7 @@ public class HandlerRegistration<T> implements MessageConsumer<T>, Handler<Messa
 
   @Override
   public synchronized MessageConsumer<T> setMaxBufferedMessages(
-    int maxBufferedMessages) {
+      int maxBufferedMessages) {
     if (maxBufferedMessages < 0) {
       throw new IllegalArgumentException("Max buffer messages must >= 0");
     }
@@ -155,7 +156,8 @@ public class HandlerRegistration<T> implements MessageConsumer<T>, Handler<Messa
     doUnregister(completionHandler);
   }
 
-  private synchronized void doUnregister(Handler<AsyncResult<Void>> completionHandler) {
+  private synchronized void doUnregister(
+      Handler<AsyncResult<Void>> completionHandler) {
     if (timeoutID != -1) {
       vertx.cancelTimer(timeoutID);
     }
@@ -175,7 +177,8 @@ public class HandlerRegistration<T> implements MessageConsumer<T>, Handler<Messa
     } else {
       if (completionHandler != null) {
         final Handler<AsyncResult<Void>> theCompletionHandler = completionHandler;
-        vertx.runOnContext(v -> theCompletionHandler.handle(Future.succeededFuture()));
+        vertx.runOnContext(
+            v -> theCompletionHandler.handle(Future.succeededFuture()));
       }
     }
   }
@@ -205,7 +208,8 @@ public class HandlerRegistration<T> implements MessageConsumer<T>, Handler<Messa
 
   private void deliver(Handler<Message<T>> theHandler, Message<T> message) {
     checkNextTick();
-    String creditsAddress = message.headers().get(MessageProducerImpl.CREDIT_ADDRESS_HEADER_NAME);
+    String creditsAddress = message.headers()
+        .get(MessageProducerImpl.CREDIT_ADDRESS_HEADER_NAME);
     if (creditsAddress != null) {
       eventBus.send(creditsAddress, 1);
     }
