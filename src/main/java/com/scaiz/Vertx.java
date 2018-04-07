@@ -12,4 +12,8 @@ public interface Vertx {
   void cancelTimer(long timeoutID);
   
   long setTimer(long delay, Handler<Long> handler);
+
+  Context currentContext();
+
+  Context getOrCreateContext();
 }

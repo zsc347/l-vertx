@@ -236,6 +236,14 @@ public class HandlerRegistration<T> implements MessageConsumer<T>,
     }
   }
 
+  public synchronized void setResult(AsyncResult<Void> result) {
+    this.result = result;
+    if (completionHandler != null) {
+      Handler<AsyncResult<Void>> callback = completionHandler;
+      vertx.runOnContext(v -> callback.handle(result));
+    }
+  }
+
   synchronized void setHandlerContext(Context handlerContext) {
     this.handlerContext = handlerContext;
   }
