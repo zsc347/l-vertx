@@ -14,7 +14,10 @@ import com.scaiz.eventbus.Message;
 import com.scaiz.eventbus.MessageCodec;
 import com.scaiz.eventbus.MessageConsumer;
 import com.scaiz.eventbus.MessageProducer;
+import com.scaiz.eventbus.ReplyFailure;
 import com.scaiz.eventbus.SendContext;
+import com.scaiz.support.MultiMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,6 +30,7 @@ public class EventBusImpl implements EventBus {
       new ConcurrentHashMap<>();
   private final List<Handler<SendContext>> interceptors =
       new CopyOnWriteArrayList<>();
+  protected final CodecManager codecManager = new CodecManager();
 
   private final Vertx vertx;
 
@@ -35,6 +39,7 @@ public class EventBusImpl implements EventBus {
   public EventBusImpl(Vertx vertx) {
     this.vertx = vertx;
   }
+
 
   @Override
   public <T> EventBus send(String address, Object message,
@@ -277,4 +282,111 @@ public class EventBusImpl implements EventBus {
     }
   }
 
+  MessageImpl createMessage(boolean isSend, String address, MultiMap headers,
+      Object body, String codecName) {
+    Objects.requireNonNull(address, "address");
+    MessageCodec codec = codecManager.lookupCodec(body, codecName);
+    @SuppressWarnings("unchecked")
+    MessageImpl msg = new MessageImpl(address, null, headers, body,
+        codec, isSend, this);
+    return msg;
+  }
+
+  private <T> void sendOrPub(SendContextImpl<T> sendContext) {
+    deliverMessageLocally(sendContext);
+  }
+
+  private <T> void deliverMessageLocally(SendContextImpl<T> sendContext) {
+    if (!deliverMessageLocally(sendContext.message)) {
+      if (sendContext.handlerRegistration != null) {
+        sendContext.handlerRegistration.sendAsyncResultFailure(
+            ReplyFailure.NO_HANDLERS,
+            "No handlers for address " + sendContext.message.address());
+      }
+    }
+  }
+
+  private boolean deliverMessageLocally(MessageImpl msg) {
+    msg.setBus(this);
+    Handlers handlers = handlerMap.get(msg.address());
+    if (handlers != null) {
+      if (msg.isSend()) {
+        HandlerHolder holder = handlers.choose();
+        if (holder != null) {
+          deliverToHandler(msg, holder);
+        }
+      } else {
+        for (HandlerHolder holder : handlers.list) {
+          deliverToHandler(msg, holder);
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+
+  private <T> void deliverToHandler(MessageImpl msg, HandlerHolder<T> holder) {
+    @SuppressWarnings("unchecked")
+    Message<T> copied = msg.copyBeforeReceive();
+    holder.getContext().runOnContext(v -> {
+      try {
+        // handler might be removed after message send but before it was received
+        if (!holder.isRemoved()) {
+          holder.getHandler().handle(copied);
+        }
+      } finally {
+        if (holder.isReplyHander()) {
+          holder.getHandler().unregister();
+        }
+      }
+    });
+  }
+
+
+  class SendContextImpl<T> implements SendContext<T> {
+
+    public final MessageImpl message;
+    public final DeliveryOptions options;
+    public final HandlerRegistration handlerRegistration;
+    public final Iterator<Handler<SendContext>> iter;
+
+    SendContextImpl(MessageImpl message,
+        DeliveryOptions options,
+        HandlerRegistration handlerRegistration,
+        Iterator<Handler<SendContext>> iter) {
+      this.message = message;
+      this.options = options;
+      this.handlerRegistration = handlerRegistration;
+      this.iter = iter;
+    }
+
+    @Override
+    public Message<T> message() {
+      return message;
+    }
+
+    @Override
+    public void next() {
+      if (iter.hasNext()) {
+        Handler<SendContext> handler = iter.next();
+        try {
+          handler.handle(this);
+        } catch (Throwable t) {
+          System.err.println("Failure in interceptor" + t.getMessage());
+        }
+      } else {
+        sendOrPub(this);
+      }
+    }
+
+    @Override
+    public boolean isSend() {
+      return message.isSend();
+    }
+
+    @Override
+    public Object sentBody() {
+      return message.sendBody();
+    }
+  }
 }

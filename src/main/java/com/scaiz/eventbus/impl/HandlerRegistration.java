@@ -39,6 +39,8 @@ public class HandlerRegistration<T> implements MessageConsumer<T>,
   private Handler<Message<T>> discardHandler;
   private Handler<Void> endHandler;
 
+  private final Handler<AsyncResult<Message<T>>> asyncResultHandler;
+
 
   public HandlerRegistration(Vertx vertx, String address, String repliedAddress,
       AsyncResult<Void> result, EventBusImpl eventBus,
@@ -48,16 +50,14 @@ public class HandlerRegistration<T> implements MessageConsumer<T>,
     this.repliedAddress = repliedAddress;
     this.result = result;
     this.eventBus = eventBus;
+    this.asyncResultHandler = asyncResultHandler;
 
     if (timeout != -1) {
-      timeoutID = vertx.setTimer(timeout, tid -> {
-        unregister();
-        asyncResultHandler.handle(Future.failedFuture(
-            new ReplyException(ReplyFailure.TIMEOUT,
-                "Timed out after waiting " + timeout
-                    + "(ms) for a reply. address: " + address
-                    + ", repliedAddress: " + repliedAddress)));
-      });
+      timeoutID = vertx
+          .setTimer(timeout, tid -> sendAsyncResultFailure(ReplyFailure.TIMEOUT,
+              "Timed out after waiting " + timeout
+                  + "(ms) for a reply. address: " + address
+                  + ", repliedAddress: " + repliedAddress));
     }
   }
 
@@ -254,5 +254,11 @@ public class HandlerRegistration<T> implements MessageConsumer<T>,
 
   Handler<Message<T>> getHandler() {
     return handler;
+  }
+
+  void sendAsyncResultFailure(ReplyFailure failure, String msg) {
+    unregister();
+    asyncResultHandler.handle(
+        Future.failedFuture(new ReplyException(failure, msg)));
   }
 }
