@@ -4,16 +4,23 @@ import com.scaiz.async.AsyncResult;
 import com.scaiz.async.Handler;
 
 public interface EventBus {
-
-  EventBus send(String address, Object message);
-
-  <T> EventBus send(String address, Object message,
-      Handler<AsyncResult<Message<T>>> replyHandler);
-
-  EventBus send(String address, Object message, DeliveryOptions options);
-
+  
   <T> EventBus send(String address, Object message, DeliveryOptions options,
       Handler<AsyncResult<Message<T>>> replyHandler);
+
+  default EventBus send(String address, Object message) {
+    return send(address, message, new DeliveryOptions(), null);
+  }
+
+  default <T> EventBus send(String address, Object message,
+      Handler<AsyncResult<Message<T>>> replyHandler) {
+    return send(address, message, new DeliveryOptions(), replyHandler);
+  }
+
+  default EventBus send(String address, Object message,
+      DeliveryOptions options) {
+    return send(address, message, options, null);
+  }
 
   EventBus publish(String address, Object message);
 

@@ -23,26 +23,17 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class EventBusImpl implements EventBus {
 
-  protected final ConcurrentMap<String, Handlers> handlerMap = new ConcurrentHashMap<>();
-  private final List<Handler<SendContext>> interceptors = new CopyOnWriteArrayList<>();
-  private Vertx vertx;
+  private final ConcurrentMap<String, Handlers> handlerMap =
+      new ConcurrentHashMap<>();
+  private final List<Handler<SendContext>> interceptors =
+      new CopyOnWriteArrayList<>();
 
+  private final Vertx vertx;
 
-  @Override
-  public EventBus send(String address, Object message) {
-    return null;
-  }
+  private boolean started;
 
-  @Override
-  public <T> EventBus send(String address, Object message,
-      Handler<AsyncResult<Message<T>>> replyHandler) {
-    return null;
-  }
-
-  @Override
-  public EventBus send(String address, Object message,
-      DeliveryOptions options) {
-    return null;
+  public EventBusImpl(Vertx vertx) {
+    this.vertx = vertx;
   }
 
   @Override
@@ -128,13 +119,31 @@ public class EventBusImpl implements EventBus {
   }
 
   @Override
-  public void start(Handler<AsyncResult<Void>> completionHandler) {
-
+  public synchronized void start(Handler<AsyncResult<Void>> completionHandler) {
+    if (started) {
+      throw new IllegalStateException("Already started");
+    }
+    started = true;
+    completionHandler.handle(Future.succeededFuture());
   }
 
   @Override
   public void close(Handler<AsyncResult<Void>> completionHandler) {
+    assertStarted();
+    unregisterAll();
 
+    if (completionHandler != null) {
+      vertx.runOnContext(
+          v -> completionHandler.handle(Future.succeededFuture()));
+    }
+  }
+
+  private void unregisterAll() {
+    handlerMap.values()
+        .forEach(handlers ->
+            handlers.list.forEach(handlerHolder -> {
+              handlerHolder.getHandler().unregister();
+            }));
   }
 
   @Override
@@ -152,7 +161,36 @@ public class EventBusImpl implements EventBus {
   public <T> void removeRegistration(String address,
       HandlerRegistration<T> registration,
       Handler<AsyncResult<Void>> completionHandler) {
+    removeLocalRegistration(address, registration);
+    if (completionHandler != null) {
+      vertx.runOnContext(
+          v -> completionHandler.handle(Future.succeededFuture()));
+    }
 
+  }
+
+
+  @SuppressWarnings("unchecked")
+  private <T> void removeLocalRegistration(String address,
+      HandlerRegistration<T> handler) {
+    Handlers handlers = handlerMap.get(address);
+    if (handlers != null) {
+      synchronized (handlers) {
+        int size = handlers.list.size();
+        for (int i = 0; i < size; i++) {
+          HandlerHolder holder = handlers.list.get(i);
+          if (holder.getHandler() == handler) {
+            handlers.list.remove(i);
+            holder.setRemoved();
+            if (handlers.list.isEmpty()) {
+              handlerMap.remove(address);
+            }
+            holder.getContext().removeCloseHook(
+                new HandlerEntry<>(address, holder.getHandler()));
+          }
+        }
+      }
+    }
   }
 
   protected <T> void addRegistration(String address,
@@ -164,7 +202,7 @@ public class EventBusImpl implements EventBus {
     registration.setResult(Future.succeededFuture());
   }
 
-  private <T> boolean addLocalRegistration(String address,
+  private <T> void addLocalRegistration(String address,
       HandlerRegistration<T> registration, boolean replyHandler,
       boolean localOnly) {
     Objects.requireNonNull(address, "address");
@@ -175,7 +213,6 @@ public class EventBusImpl implements EventBus {
     }
     registration.setHandlerContext(context);
 
-    boolean newAddress = false;
     HandlerHolder holder = new HandlerHolder<>(registration, replyHandler,
         localOnly, context);
 
@@ -187,7 +224,6 @@ public class EventBusImpl implements EventBus {
       if (preHandlers != null) {
         handlers = preHandlers;
       }
-      newAddress = true;
     }
     handlers.list.add(holder);
 
@@ -196,7 +232,6 @@ public class EventBusImpl implements EventBus {
       context.addCloseHook(entry);
     }
 
-    return newAddress;
   }
 
   static class HandlerEntry<T> implements Closeable {
@@ -219,10 +254,7 @@ public class EventBusImpl implements EventBus {
         return false;
       }
       HandlerEntry that = (HandlerEntry) o;
-      if (!address.equals(that.address) || !handler.equals(that.handler)) {
-        return false;
-      }
-      return true;
+      return address.equals(that.address) && handler.equals(that.handler);
     }
 
     @Override
@@ -236,6 +268,12 @@ public class EventBusImpl implements EventBus {
     @Override
     public void close(Handler<AsyncResult<Void>> completionHandler) {
       handler.unregister(completionHandler);
+    }
+  }
+
+  private void assertStarted() {
+    if (!started) {
+      throw new IllegalStateException("Event Bus is not started");
     }
   }
 

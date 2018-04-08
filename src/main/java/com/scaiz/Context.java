@@ -7,5 +7,7 @@ public interface Context {
 
   void runOnContext(Handler<Void> action);
 
-  void addCloseHook(Closeable closeable);
+  void addCloseHook(Closeable hook);
+
+  void removeCloseHook(Closeable hook);
 }
