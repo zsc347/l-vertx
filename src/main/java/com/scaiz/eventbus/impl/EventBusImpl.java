@@ -14,6 +14,7 @@ import com.scaiz.eventbus.Message;
 import com.scaiz.eventbus.MessageCodec;
 import com.scaiz.eventbus.MessageConsumer;
 import com.scaiz.eventbus.MessageProducer;
+import com.scaiz.eventbus.ReplyException;
 import com.scaiz.eventbus.ReplyFailure;
 import com.scaiz.eventbus.SendContext;
 import com.scaiz.support.MultiMap;
@@ -23,8 +24,11 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class EventBusImpl implements EventBus {
+
+  private final AtomicLong replySequence = new AtomicLong(0);
 
   private final ConcurrentMap<String, Handlers> handlerMap =
       new ConcurrentHashMap<>();
@@ -239,6 +243,54 @@ public class EventBusImpl implements EventBus {
 
   }
 
+  public <T> void sendReply(MessageImpl replyMessage,
+      MessageImpl replierMessage,
+      DeliveryOptions options,
+      Handler<AsyncResult<Message<T>>> replyHandler) {
+    if (replyMessage.address() == null) {
+      throw new IllegalStateException("address not specified");
+    } else {
+      HandlerRegistration<T> replyHandlerRegistration = createReplyHandlerRegistration(
+          replyMessage, options, replyHandler);
+      new SendContextImpl<>(replyMessage, options, replyHandlerRegistration)
+          .next();
+    }
+  }
+
+  private <T> HandlerRegistration<T> createReplyHandlerRegistration(
+      MessageImpl message,
+      DeliveryOptions options, Handler<AsyncResult<Message<T>>> replyHandler) {
+    if (replyHandler != null) {
+      long timeout = options.getSendTimeout();
+      String replyAddress = generateReplyAddress();
+      message.setReplyAddress(replyAddress);
+      Handler<Message<T>> simpleReplyHandler = convertHandler(replyHandler);
+      HandlerRegistration<T> registration = new HandlerRegistration<>(vertx,
+          replyAddress, message.address(), this, replyHandler, timeout);
+      registration.handler(simpleReplyHandler);
+      return registration;
+    }
+    return null;
+  }
+
+  private <T> Handler<Message<T>> convertHandler(
+      Handler<AsyncResult<Message<T>>> handler) {
+    return reply -> {
+      Future<Message<T>> result;
+      if (reply.body() instanceof ReplyException) {
+        ReplyException exception = (ReplyException) reply.body();
+        result = Future.failedFuture(exception);
+      } else {
+        result = Future.succeededFuture(reply);
+      }
+      handler.handle(result);
+    };
+  }
+
+  private String generateReplyAddress() {
+    return Long.toString(replySequence.incrementAndGet());
+  }
+
   static class HandlerEntry<T> implements Closeable {
 
     final String address;
@@ -345,22 +397,21 @@ public class EventBusImpl implements EventBus {
 
   class SendContextImpl<T> implements SendContext<T> {
 
-    public final MessageImpl message;
-    public final DeliveryOptions options;
-    public final HandlerRegistration handlerRegistration;
-    public final Iterator<Handler<SendContext>> iter;
+    private final MessageImpl message;
+    final DeliveryOptions options;
+    final HandlerRegistration handlerRegistration;
+    final Iterator<Handler<SendContext>> iter = interceptors.iterator();
 
     SendContextImpl(MessageImpl message,
         DeliveryOptions options,
-        HandlerRegistration handlerRegistration,
-        Iterator<Handler<SendContext>> iter) {
+        HandlerRegistration handlerRegistration) {
       this.message = message;
       this.options = options;
       this.handlerRegistration = handlerRegistration;
-      this.iter = iter;
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Message<T> message() {
       return message;
     }

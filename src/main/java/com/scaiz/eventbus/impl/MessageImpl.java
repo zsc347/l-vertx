@@ -5,6 +5,8 @@ import com.scaiz.async.Handler;
 import com.scaiz.eventbus.DeliveryOptions;
 import com.scaiz.eventbus.Message;
 import com.scaiz.eventbus.MessageCodec;
+import com.scaiz.eventbus.ReplyException;
+import com.scaiz.eventbus.ReplyFailure;
 import com.scaiz.support.CaseInsensitiveHeaders;
 import com.scaiz.support.MultiMap;
 
@@ -91,11 +93,19 @@ public class MessageImpl<U, V> implements Message<V> {
   @Override
   public <R> void reply(Object message, DeliveryOptions options,
       Handler<AsyncResult<Message<R>>> replyHandler) {
+    if (replyAddress != null) {
+      sendReply(
+          bus.createMessage(true, replyAddress, options.getHeaders(), message,
+              options.getCodecName()), options, replyHandler);
+    }
   }
 
   @Override
   public void fail(int failureCode, String message) {
     if (replyAddress != null) {
+      sendReply(bus.createMessage(true, replyAddress, null,
+          new ReplyException(ReplyFailure.RECIPIENT_FAILURE,
+              failureCode, message), null), null, null);
     }
   }
 
@@ -106,10 +116,15 @@ public class MessageImpl<U, V> implements Message<V> {
   private <R> void sendReply(MessageImpl msg, DeliveryOptions options,
       Handler<AsyncResult<Message<R>>> replyHandler) {
     if (bus != null) {
+      bus.sendReply(msg, this, options, replyHandler);
     }
   }
 
   public MessageImpl<U, V> copyBeforeReceive() {
     return new MessageImpl<>(this);
+  }
+
+  public void setReplyAddress(String replyAddress) {
+    this.replyAddress = replyAddress;
   }
 }

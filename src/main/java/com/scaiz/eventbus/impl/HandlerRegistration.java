@@ -42,13 +42,15 @@ public class HandlerRegistration<T> implements MessageConsumer<T>,
   private final Handler<AsyncResult<Message<T>>> asyncResultHandler;
 
 
-  public HandlerRegistration(Vertx vertx, String address, String repliedAddress,
-      AsyncResult<Void> result, EventBusImpl eventBus,
-      Handler<AsyncResult<Message<T>>> asyncResultHandler, long timeout) {
+  public HandlerRegistration(Vertx vertx,
+      String address,
+      String repliedAddress,
+      EventBusImpl eventBus,
+      Handler<AsyncResult<Message<T>>> asyncResultHandler,
+      long timeout) {
     this.vertx = vertx;
     this.address = address;
     this.repliedAddress = repliedAddress;
-    this.result = result;
     this.eventBus = eventBus;
     this.asyncResultHandler = asyncResultHandler;
 
