@@ -4,7 +4,7 @@ import com.scaiz.async.AsyncResult;
 import com.scaiz.async.Handler;
 
 public interface EventBus {
-  
+
   <T> EventBus send(String address, Object message, DeliveryOptions options,
       Handler<AsyncResult<Message<T>>> replyHandler);
 
@@ -22,26 +22,36 @@ public interface EventBus {
     return send(address, message, options, null);
   }
 
-  EventBus publish(String address, Object message);
-
   EventBus publish(String address, Object message, DeliveryOptions options);
 
-  <T> MessageConsumer<T> consumer(String address);
+  default EventBus publish(String address, Object message) {
+    return publish(address, message, new DeliveryOptions());
+  }
 
   <T> MessageConsumer<T> consumer(String address, Handler<Message<T>> handler);
 
-  <T> MessageConsumer<T> localConsumer(String address);
+  default <T> MessageConsumer<T> consumer(String address) {
+    return consumer(address, null);
+  }
 
   <T> MessageConsumer<T> localConsumer(String address,
       Handler<Message<T>> handler);
 
-  <T> MessageProducer<T> sender(String address);
+  default <T> MessageConsumer<T> localConsumer(String address) {
+    return localConsumer(address, null);
+  }
 
   <T> MessageProducer<T> sender(String address, DeliveryOptions options);
 
-  <T> MessageProducer<T> publisher(String address);
+  default <T> MessageProducer<T> sender(String address) {
+    return sender(address, new DeliveryOptions());
+  }
 
   <T> MessageProducer<T> publisher(String address, DeliveryOptions options);
+
+  default <T> MessageProducer<T> publisher(String address) {
+    return publisher(address, new DeliveryOptions());
+  }
 
   EventBus registerCodec(MessageCodec codec);
 
