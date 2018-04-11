@@ -8,4 +8,11 @@ public class CodecManager {
     return null;
   }
 
+  public void registerCodec(MessageCodec codec) {
+
+  }
+
+  public void unregisterCodec(String codecName) {
+
+  }
 }

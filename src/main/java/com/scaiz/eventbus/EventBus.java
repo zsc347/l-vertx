@@ -28,12 +28,6 @@ public interface EventBus {
     return publish(address, message, new DeliveryOptions());
   }
 
-  <T> MessageConsumer<T> consumer(String address, Handler<Message<T>> handler);
-
-  default <T> MessageConsumer<T> consumer(String address) {
-    return consumer(address, null);
-  }
-
   <T> MessageConsumer<T> localConsumer(String address,
       Handler<Message<T>> handler);
 

@@ -34,7 +34,7 @@ public class EventBusImpl implements EventBus {
       new ConcurrentHashMap<>();
   private final List<Handler<SendContext>> interceptors =
       new CopyOnWriteArrayList<>();
-  protected final CodecManager codecManager = new CodecManager();
+  private final CodecManager codecManager = new CodecManager();
 
   private final Vertx vertx;
 
@@ -44,76 +44,63 @@ public class EventBusImpl implements EventBus {
     this.vertx = vertx;
   }
 
+  private <T> void sendOrPubInternal(MessageImpl message,
+      DeliveryOptions options,
+      Handler<AsyncResult<Message<T>>> replyHandler) {
+    assertStarted();
+    HandlerRegistration<T> replyHandlerRegistration = createReplyHandlerRegistration(
+        message, options, replyHandler);
+    new SendContextImpl<>(message, options, replyHandlerRegistration).next();
+  }
 
   @Override
   public <T> EventBus send(String address, Object message,
       DeliveryOptions options, Handler<AsyncResult<Message<T>>> replyHandler) {
-    return null;
+    sendOrPubInternal(
+        createMessage(true, address, options.getHeaders(), message,
+            options.getCodecName()), options, replyHandler);
+    return this;
   }
 
-  @Override
-  public EventBus publish(String address, Object message) {
-    return null;
-  }
 
   @Override
   public EventBus publish(String address, Object message,
       DeliveryOptions options) {
-    return null;
+    sendOrPubInternal(createMessage(false, address, options.getHeaders(),
+        message, options.getCodecName()), options, null);
+    return this;
   }
 
-  @Override
-  public <T> MessageConsumer<T> consumer(String address) {
-    return null;
-  }
-
-  @Override
-  public <T> MessageConsumer<T> consumer(String address,
-      Handler<Message<T>> handler) {
-    return null;
-  }
-
-  @Override
-  public <T> MessageConsumer<T> localConsumer(String address) {
-    return null;
-  }
 
   @Override
   public <T> MessageConsumer<T> localConsumer(String address,
       Handler<Message<T>> handler) {
-    return null;
-  }
-
-  @Override
-  public <T> MessageProducer<T> sender(String address) {
-    return null;
+    assertStarted();
+    return new HandlerRegistration<>(vertx, address, null, this, null, -1);
   }
 
   @Override
   public <T> MessageProducer<T> sender(String address,
       DeliveryOptions options) {
-    return null;
-  }
-
-  @Override
-  public <T> MessageProducer<T> publisher(String address) {
-    return null;
+    return new MessageProducerImpl<>(vertx, address, true, options);
   }
 
   @Override
   public <T> MessageProducer<T> publisher(String address,
       DeliveryOptions options) {
-    return null;
+    return new MessageProducerImpl<>(vertx, address, false, options);
   }
 
   @Override
   public EventBus registerCodec(MessageCodec codec) {
-    return null;
+    codecManager.registerCodec(codec);
+    return this;
   }
 
   @Override
   public EventBus unregisterCodec(String name) {
-    return null;
+    codecManager.unregisterCodec(name);
+    return this;
   }
 
   @Override
@@ -175,7 +162,6 @@ public class EventBusImpl implements EventBus {
       vertx.runOnContext(
           v -> completionHandler.handle(Future.succeededFuture()));
     }
-
   }
 
 
@@ -244,7 +230,6 @@ public class EventBusImpl implements EventBus {
   }
 
   public <T> void sendReply(MessageImpl replyMessage,
-      MessageImpl replierMessage,
       DeliveryOptions options,
       Handler<AsyncResult<Message<T>>> replyHandler) {
     if (replyMessage.address() == null) {
@@ -358,6 +343,7 @@ public class EventBusImpl implements EventBus {
     }
   }
 
+  @SuppressWarnings("unchecked")
   private boolean deliverMessageLocally(MessageImpl msg) {
     msg.setBus(this);
     Handlers handlers = handlerMap.get(msg.address());
