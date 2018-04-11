@@ -26,7 +26,7 @@ public class MessageImpl<U, V> implements Message<V> {
 
   private boolean isSend;
 
-  public MessageImpl(String address, String replyAddress,
+  MessageImpl(String address, String replyAddress,
       MultiMap headers, U sendBody, MessageCodec codec, boolean isSend,
       EventBusImpl eventBus) {
     this.address = address;
@@ -38,7 +38,7 @@ public class MessageImpl<U, V> implements Message<V> {
     this.bus = eventBus;
   }
 
-  public MessageImpl(MessageImpl<U, V> other) {
+  private MessageImpl(MessageImpl<U, V> other) {
     this.bus = other.bus;
     this.address = other.address;
     this.replyAddress = other.replyAddress;
@@ -55,7 +55,6 @@ public class MessageImpl<U, V> implements Message<V> {
     }
 
     this.isSend = other.isSend;
-
   }
 
   U sendBody() {
@@ -82,6 +81,9 @@ public class MessageImpl<U, V> implements Message<V> {
 
   @Override
   public MultiMap headers() {
+    if (headers == null) {
+      headers = new CaseInsensitiveHeaders();
+    }
     return headers;
   }
 

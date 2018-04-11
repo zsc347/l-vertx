@@ -72,11 +72,7 @@ public class MessageProducerImpl<T> implements MessageProducer<T> {
       Handler<AsyncResult<Message<R>>> replyHandler) {
     if (credits > 0) {
       credits--;
-      if (replyHandler == null) {
-        bus.send(address, data, options);
-      } else {
-        bus.send(address, data, options, replyHandler);
-      }
+      bus.send(address, data, options, replyHandler);
     } else {
       pending.add(data);
     }
