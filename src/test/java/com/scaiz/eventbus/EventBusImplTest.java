@@ -35,8 +35,13 @@ public class EventBusImplTest {
   @Test
   public void testSendAndReceive() {
     MessageConsumer<String> consumer = eventBus.consumer("news.uk.sport");
-    consumer.handler(message -> {
-      System.out.println("I have received a message: " + message.body());
+    consumer.handler(message ->
+        System.out.println("I have received a message: " + message.body()));
+    MessageProducer<String> sender = eventBus.sender("news.uk.sport");
+    sender.send("test message", ar -> {
+      if (ar.succeeded()) {
+        System.out.println("get message reply");
+      }
     });
   }
 

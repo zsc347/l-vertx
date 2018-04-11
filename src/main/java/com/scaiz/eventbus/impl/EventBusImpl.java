@@ -73,7 +73,7 @@ public class EventBusImpl implements EventBus {
 
 
   @Override
-  public <T> MessageConsumer<T> localConsumer(String address,
+  public <T> MessageConsumer<T> consumer(String address,
       Handler<Message<T>> handler) {
     assertStarted();
     return new HandlerRegistration<>(vertx, address, null, this, null, -1);
