@@ -1,8 +1,12 @@
 package com.scaiz.eventbus;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.scaiz.mock.VertxMock;
+import java.util.LinkedList;
+import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,8 +30,6 @@ public class EventBusImplTest {
     eventBus.close(ar -> {
       if (ar.failed()) {
         fail();
-      } else {
-        System.out.println("close succeed");
       }
     });
   }
@@ -46,53 +48,62 @@ public class EventBusImplTest {
 
   @Test
   public void testSendAndReceive() {
-    registerConsumer();
-    eventBus.send("test.address", "test message 1");
-    eventBus.send("test.address", "test message 2");
-    eventBus.send("test.address", "test message 3");
+    final List<String> consumed = new LinkedList<>();
+    eventBus.consumer("test.address", message -> {
+      consumed.add((String) message.body());
+    });
+    eventBus.send("test.address", "message1");
+    eventBus.send("test.address", "message2");
+    eventBus.send("test.address", "message3");
+    assertTrue(consumed.size() == 3);
+    assertTrue(consumed.contains("message1"));
+    assertTrue(consumed.contains("message2"));
+    assertTrue(consumed.contains("message3"));
   }
 
 
   @Test
   public void testSender() {
-    registerConsumer();
+    final List<String> consumed = new LinkedList<>();
+    eventBus.consumer("test.address",
+        message -> consumed.add((String) message.body()));
     MessageProducer<String> sender = eventBus.sender("test.address");
-    sender.send("sender message should only consumed by one consumer - 1");
-    sender.send("sender message should only consumed by one consumer - 2");
-    sender.send("sender message should only consumed by one consumer - 3");
+    sender.send("message");
+    assertTrue(consumed.contains("message"));
   }
 
+
+  // TODO test vertx
+  // publisher send will consume credits, but will never get return
+  // what if credits consumed out ?
   @Test
   public void testPublisher() {
-    registerConsumer();
+    final List<String> consumed = new LinkedList<>();
     MessageProducer<String> publisher = eventBus.publisher("test.address");
-
-    // publisher send will consume credits, but will never get return
-    // what if credits consumed out ?
-    // TODO test vertx
-
-    publisher.send("publisher send message"
-        + " will be consumed by only one consumer");
-    publisher.write("publisher write message should "
-        + "be consumed by all consumer");
+    for (int i = 0; i < 3; i++) {
+      eventBus.consumer("test.address",
+          message -> consumed.add((String) message.body()));
+    }
+    publisher.send("send");
+    assertEquals(1, consumed.stream().filter(x -> x.equals("send")).count());
+    publisher.write("publish");
+    assertEquals(3, consumed.stream().filter(x -> x.equals("publish")).count());
   }
 
 
   @Test
   public void testReply() {
-    registerConsumer();
-    boolean[] gotReply = new boolean[]{false};
+    final List<String> replied = new LinkedList<>();
+    eventBus.consumer("test.address",
+        message -> message.reply("reply-message"));
     eventBus.send("test.address", "should got reply message",
         new DeliveryOptions(),
         reply -> {
           if (reply.succeeded()) {
-            gotReply[0] = true;
-            System.out.println("Message has been consumed successfully");
+            replied.add((String) reply.result().body());
           }
         });
-    if(!gotReply[0]) {
-      fail();
-    }
+    assertTrue(replied.contains("reply-message"));
   }
 
   @After
