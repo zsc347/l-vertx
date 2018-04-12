@@ -76,7 +76,12 @@ public class EventBusImpl implements EventBus {
   public <T> MessageConsumer<T> consumer(String address,
       Handler<Message<T>> handler) {
     assertStarted();
-    return new HandlerRegistration<>(vertx, address, null, this, null, -1);
+    MessageConsumer<T> consumer = new HandlerRegistration<>(vertx, address,
+        null, this, null, -1);
+    if (handler != null) {
+      consumer.handler(handler);
+    }
+    return consumer;
   }
 
   @Override
@@ -183,6 +188,7 @@ public class EventBusImpl implements EventBus {
             holder.getContext().removeCloseHook(
                 new HandlerEntry<>(address, holder.getHandler()));
           }
+          break;
         }
       }
     }
