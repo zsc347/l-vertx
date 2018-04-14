@@ -4,7 +4,7 @@ import com.scaiz.vertx.container.VertxThread;
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 
-import com.scaiz.vertx.VertxInternal;
+import com.scaiz.vertx.container.VertxInternal;
 import com.scaiz.vertx.async.AsyncResult;
 import com.scaiz.vertx.async.Closeable;
 import com.scaiz.vertx.async.Future;
