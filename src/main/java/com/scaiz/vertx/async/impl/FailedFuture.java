@@ -10,7 +10,8 @@ public class FailedFuture<T> implements Future<T> {
   private final Throwable cause;
 
   public FailedFuture(Throwable cause) {
-    this.cause = Optional.ofNullable(cause).orElse(new NoStackTraceThrowable(null));
+    this.cause = Optional.ofNullable(cause)
+        .orElse(new NoStackTraceThrowable(null));
   }
 
   @Override
@@ -32,6 +33,11 @@ public class FailedFuture<T> implements Future<T> {
   @Override
   public void fail(Throwable cause) {
     throw new IllegalStateException("Result already complete: failed");
+  }
+
+  @Override
+  public boolean tryFail(Throwable cause) {
+    return false;
   }
 
   @Override

@@ -65,7 +65,8 @@ public class FutureImpl<T> implements Future<T> {
     }
   }
 
-  private boolean tryFail(Throwable cause) {
+  @Override
+  public boolean tryFail(Throwable cause) {
     Handler<AsyncResult<T>> h;
     synchronized (this) {
       if (isComplete()) {

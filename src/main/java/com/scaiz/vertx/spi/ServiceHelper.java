@@ -16,7 +16,7 @@ public class ServiceHelper {
     return factory;
   }
 
-  public static <T> T loadFactoryOrNull(Class<T> clazz) {
+  private static <T> T loadFactoryOrNull(Class<T> clazz) {
     Collection<T> collection = loadFactories(clazz);
     if (!collection.isEmpty()) {
       return collection.iterator().next();
@@ -25,7 +25,7 @@ public class ServiceHelper {
     }
   }
 
-  public static <T> Collection<T> loadFactories(Class<T> clazz) {
+  private static <T> Collection<T> loadFactories(Class<T> clazz) {
     return loadFactories(clazz, null);
   }
 

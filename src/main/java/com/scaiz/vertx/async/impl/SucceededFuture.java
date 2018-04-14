@@ -34,6 +34,11 @@ class SucceededFuture<T> implements Future<T> {
   }
 
   @Override
+  public boolean tryFail(Throwable cause) {
+    return false;
+  }
+
+  @Override
   public void handle(AsyncResult<T> asyncResult) {
     throw new IllegalStateException("Result already succeeded");
   }

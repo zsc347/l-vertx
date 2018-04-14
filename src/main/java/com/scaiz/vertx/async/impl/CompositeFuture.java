@@ -115,7 +115,8 @@ public class CompositeFuture implements Future<CompositeFuture> {
   }
 
   @Override
-  public Future<CompositeFuture> setHandler(Handler<AsyncResult<CompositeFuture>> handler) {
+  public Future<CompositeFuture> setHandler(
+      Handler<AsyncResult<CompositeFuture>> handler) {
     boolean call;
     synchronized (this) {
       this.handler = handler;
@@ -132,7 +133,8 @@ public class CompositeFuture implements Future<CompositeFuture> {
     Handler<AsyncResult<CompositeFuture>> handler = setCompleted(null);
     if (handler == null) {
       throw new IllegalStateException(
-          "Future already completed: " + (this.cause != null ? "succeeded" : "failed"));
+          "Future already completed: " + (this.cause != null ? "succeeded"
+              : "failed"));
     }
   }
 
@@ -149,10 +151,22 @@ public class CompositeFuture implements Future<CompositeFuture> {
 
   @Override
   public void fail(Throwable cause) {
-    if (cause == null) {
-      cause = new NoStackTraceThrowable(null);
+    if (!tryFail(cause())) {
+      throw new IllegalStateException(
+          "Result is already complete: " + (this.cause == null
+              ? "succeeded" : "failed"));
     }
-    setCompleted(cause);
+  }
+
+  @Override
+  public boolean tryFail(Throwable cause) {
+    Handler<AsyncResult<CompositeFuture>> handler = setCompleted(cause);
+    if (handler != null) {
+      handler.handle(this);
+      return true;
+    } else {
+      return false;
+    }
   }
 
   @Override

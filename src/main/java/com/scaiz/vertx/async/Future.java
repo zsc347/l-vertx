@@ -35,6 +35,8 @@ public interface Future<T> extends AsyncResult<T>, Handler<AsyncResult<T>> {
 
   void fail(Throwable cause);
 
+  boolean tryFail(Throwable cause);
+
   default <U> Future<U> compose(Handler<T> handler, Future<U> next) {
     setHandler(ar -> {
       if (ar.succeeded()) {
