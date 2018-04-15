@@ -22,4 +22,10 @@ public class VertxThread extends Thread {
   public boolean isWorker() {
     return false;
   }
+
+  public void executeStart() {
+  }
+
+  public void executeEnd() {
+  }
 }

@@ -1,14 +1,18 @@
 package com.scaiz.vertx.async;
 
 import com.scaiz.vertx.async.impl.FutureImpl;
+import java.util.concurrent.Executor;
 import java.util.function.Function;
 
-public class Promise<T> {
+class Promise<T> {
 
   private AsyncResult<T> asyncResult;
   private State state;
   private CallBackEntry entryTail;
   private boolean isRunning;
+
+  // TODO need an environment executor
+  private Executor executor = Runnable::run;
 
   private enum State {
     PENDING,
@@ -187,7 +191,7 @@ public class Promise<T> {
   private void schedule() {
     if (!this.isRunning) {
       this.isRunning = true;
-      Executor.run(this::executeCallbacks);
+      executor.execute(this::executeCallbacks);
     }
   }
 
