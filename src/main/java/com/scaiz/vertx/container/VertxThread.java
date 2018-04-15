@@ -6,7 +6,16 @@ public class VertxThread extends Thread {
 
   private Context context;
 
+  public VertxThread(Runnable runnable, String prefix, boolean isWorker,
+      long maxExecTime) {
+
+  }
+
   public void setContext(ContextImpl context) {
     this.context = context;
+  }
+
+  public Context getContext() {
+    return context;
   }
 }

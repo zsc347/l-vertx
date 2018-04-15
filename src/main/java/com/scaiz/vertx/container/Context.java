@@ -1,5 +1,6 @@
 package com.scaiz.vertx.container;
 
+import com.scaiz.vertx.Vertx;
 import com.scaiz.vertx.async.AsyncResult;
 import com.scaiz.vertx.async.Closeable;
 import com.scaiz.vertx.async.Future;
@@ -34,4 +35,8 @@ public interface Context {
   void removeCloseHook(Closeable hook);
 
   Context exceptionHandler(Handler<Throwable> handler);
+
+  Handler<Throwable> exceptionHandler();
+
+  Vertx owner();
 }

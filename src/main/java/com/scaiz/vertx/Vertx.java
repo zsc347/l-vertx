@@ -9,7 +9,7 @@ public interface Vertx {
   void runOnContext(Handler<Void> action);
 
   void cancelTimer(long timeoutID);
-  
+
   long setTimer(long delay, Handler<Long> handler);
 
   Context currentContext();
@@ -17,4 +17,6 @@ public interface Vertx {
   Context getOrCreateContext();
 
   EventBus eventBus();
+
+  Handler<Throwable> exceptionHandler();
 }
