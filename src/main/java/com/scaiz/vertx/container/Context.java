@@ -5,6 +5,7 @@ import com.scaiz.vertx.async.AsyncResult;
 import com.scaiz.vertx.async.Closeable;
 import com.scaiz.vertx.async.Future;
 import com.scaiz.vertx.async.Handler;
+import com.scaiz.vertx.container.impl.TaskQueue;
 
 public interface Context {
 

@@ -11,6 +11,7 @@ import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.RejectedExecutionException;
 
 public abstract class ContextImpl implements Context {
 
@@ -84,12 +85,20 @@ public abstract class ContextImpl implements Context {
 
   @Override
   public void runOnContext(Handler<Void> action) {
-
+    try {
+      executeAsync(action);
+    } catch (RejectedExecutionException e) {
+      // pool has been shutdown
+    }
   }
+
+  protected abstract void executeAsync(Handler<Void> task);
+
 
   @Override
   public <T> void executeBlocking(Handler<Future<T>> blockingCodeHandler,
       boolean ordered, Handler<AsyncResult<T>> asyncResultHandler) {
+
 
   }
 
@@ -103,10 +112,6 @@ public abstract class ContextImpl implements Context {
     closeHooks.remove(hook);
   }
 
-  public void runCloseHooks(Handler<AsyncResult<Void>> completeHandler) {
-    closeHooks.run(completeHandler);
-    VertxThreadFactory.unsetContext(this);
-  }
 
   @Override
   public Context exceptionHandler(Handler<Throwable> exceptionHandler) {
@@ -117,5 +122,27 @@ public abstract class ContextImpl implements Context {
   @Override
   public Handler<Throwable> exceptionHandler() {
     return this.exceptionHandler;
+  }
+
+  public void runCloseHooks(Handler<AsyncResult<Void>> completeHandler) {
+    closeHooks.run(completeHandler);
+    VertxThreadFactory.unsetContext(this);
+  }
+
+  public static boolean isOnWorkerThread() {
+    return isOnVertxThread(true);
+  }
+
+  public static boolean isOnEventLoopThread() {
+    return isOnVertxThread(false);
+  }
+
+  private static boolean isOnVertxThread(boolean isWorker) {
+    Thread t = Thread.currentThread();
+    if (t instanceof VertxThread) {
+      VertxThread vt = (VertxThread) t;
+      return vt.isWorker() == isWorker;
+    }
+    return false;
   }
 }

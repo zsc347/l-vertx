@@ -18,4 +18,8 @@ public class VertxThread extends Thread {
   public Context getContext() {
     return context;
   }
+
+  public boolean isWorker() {
+    return false;
+  }
 }
