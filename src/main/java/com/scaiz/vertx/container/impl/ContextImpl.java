@@ -1,11 +1,13 @@
 package com.scaiz.vertx.container.impl;
 
+import com.scaiz.vertx.Vertx;
 import com.scaiz.vertx.async.AsyncResult;
 import com.scaiz.vertx.async.Closeable;
 import com.scaiz.vertx.async.Future;
 import com.scaiz.vertx.async.Handler;
 import com.scaiz.vertx.container.Action;
 import com.scaiz.vertx.container.Context;
+import com.scaiz.vertx.container.ContextTask;
 import com.scaiz.vertx.container.VertxInternal;
 import com.scaiz.vertx.container.VertxThread;
 import io.netty.channel.EventLoop;
@@ -30,16 +32,18 @@ public abstract class ContextImpl implements Context {
   private CloseHooks closeHooks;
   private ConcurrentMap<Object, Object> contextData;
   private Handler<Throwable> exceptionHandler;
-  private VertxInternal owner;
 
   private final WorkerPool workerPool;
   private final TaskQueue orderedTasks;
 
   private final WorkerPool internalWorkerPool;
   private final TaskQueue internalOrderedTasks;
+  private Vertx owner;
+  private VertxThread contextThread;
 
 
-  protected ContextImpl(ClassLoader tccl, WorkerPool internalWorkerPool,
+  ContextImpl(VertxInternal vertx, ClassLoader tccl,
+      WorkerPool internalWorkerPool,
       WorkerPool workerPool) {
     this.tccl = tccl;
     this.closeHooks = new CloseHooks();
@@ -49,6 +53,8 @@ public abstract class ContextImpl implements Context {
 
     this.workerPool = workerPool;
     this.orderedTasks = new TaskQueue();
+
+    this.owner = vertx;
   }
 
   private static EventLoop getEventLoop(VertxInternal vertx) {
@@ -167,6 +173,42 @@ public abstract class ContextImpl implements Context {
   }
 
 
+  protected Runnable wrapTask(ContextTask cTask, Handler<Void> hTask) {
+    return () -> {
+      Thread tc = Thread.currentThread();
+      if (!(tc instanceof VertxThread)) {
+        throw new IllegalStateException(
+            "Uh oh! Event loop context executing with wrong thread! Expected "
+                + contextThread + " got " + tc);
+      }
+      VertxThread current = (VertxThread) tc;
+      if (!DISABLE_TIMINGS) {
+        current.executeStart();
+      }
+      try {
+        setCurrentThreadContext(ContextImpl.this);
+        if (cTask != null) {
+          cTask.run();
+        } else {
+          hTask.handle(null);
+        }
+      } catch (Throwable t) {
+        Handler<Throwable> handler = this.exceptionHandler;
+        if (handler == null) {
+          handler = owner.exceptionHandler();
+        }
+        if (handler != null) {
+          handler.handle(t);
+        }
+      } finally {
+        if (!DISABLE_TIMINGS) {
+          current.executeEnd();
+        }
+      }
+    };
+  }
+
+
   @Override
   public void addCloseHook(Closeable hook) {
     closeHooks.add(hook);
@@ -187,6 +229,11 @@ public abstract class ContextImpl implements Context {
   @Override
   public Handler<Throwable> exceptionHandler() {
     return this.exceptionHandler;
+  }
+
+  @Override
+  public Vertx owner() {
+    return owner;
   }
 
   public void runCloseHooks(Handler<AsyncResult<Void>> completeHandler) {

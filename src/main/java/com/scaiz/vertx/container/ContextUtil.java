@@ -1,17 +1,18 @@
 package com.scaiz.vertx.container;
 
+import com.scaiz.vertx.container.impl.EventLoopContext;
+
 public class ContextUtil {
 
-  boolean isEventLoopContext(Context context) {
+  public static boolean isEventLoopContext(Context context) {
+    return context instanceof EventLoopContext;
+  }
+
+  public static boolean isWorkerContext(Context context) {
     return false;
   }
 
-  boolean isWorkerContext(Context context) {
+  public static boolean isMultiThreadedWorkerContext(Context context) {
     return false;
   }
-
-  boolean isMultiThreadedWorkerContext(Context context) {
-    return false;
-  }
-
 }
