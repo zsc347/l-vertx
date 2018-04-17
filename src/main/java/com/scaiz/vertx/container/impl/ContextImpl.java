@@ -32,9 +32,23 @@ public abstract class ContextImpl implements Context {
   private Handler<Throwable> exceptionHandler;
   private VertxInternal owner;
 
-  protected ContextImpl(ClassLoader tccl) {
+  private final WorkerPool workerPool;
+  private final TaskQueue orderedTasks;
+
+  private final WorkerPool internalWorkerPool;
+  private final TaskQueue internalOrderedTasks;
+
+
+  protected ContextImpl(ClassLoader tccl, WorkerPool internalWorkerPool,
+      WorkerPool workerPool) {
     this.tccl = tccl;
     this.closeHooks = new CloseHooks();
+
+    this.internalWorkerPool = internalWorkerPool;
+    this.internalOrderedTasks = new TaskQueue();
+
+    this.workerPool = workerPool;
+    this.orderedTasks = new TaskQueue();
   }
 
   private static EventLoop getEventLoop(VertxInternal vertx) {
@@ -46,7 +60,7 @@ public abstract class ContextImpl implements Context {
     }
   }
 
-  public static void setCurrentThreadContext(ContextImpl context) {
+  static void setCurrentThreadContext(ContextImpl context) {
     Thread current = Thread.currentThread();
     if (current instanceof VertxThread) {
       ((VertxThread) current).setContext(context);
@@ -83,7 +97,7 @@ public abstract class ContextImpl implements Context {
     return (T) contextData().get(key);
   }
 
-  public synchronized ConcurrentMap contextData() {
+  private synchronized ConcurrentMap contextData() {
     if (contextData == null) {
       contextData = new ConcurrentHashMap<>();
     }
@@ -101,14 +115,20 @@ public abstract class ContextImpl implements Context {
 
   protected abstract void executeAsync(Handler<Void> task);
 
+  public <T> void executeBlocking(Action<T> action,
+      Handler<AsyncResult<T>> resultHandler) {
+    executeBlocking(action, null, internalWorkerPool.executor(),
+        internalOrderedTasks, resultHandler);
+  }
 
   @Override
   public <T> void executeBlocking(Handler<Future<T>> blockingCodeHandler,
-      boolean ordered, Handler<AsyncResult<T>> asyncResultHandler) {
-
+      boolean ordered, Handler<AsyncResult<T>> resultHandler) {
+    executeBlocking(null, blockingCodeHandler, workerPool.executor(),
+        ordered ? orderedTasks : null, resultHandler);
   }
 
-  <T> void executeBlocking(Action<T> action,
+  private <T> void executeBlocking(Action<T> action,
       Handler<Future<T>> blockingCodeHandler,
       Executor exec,
       TaskQueue queue,

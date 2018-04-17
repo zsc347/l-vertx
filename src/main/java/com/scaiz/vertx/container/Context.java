@@ -27,8 +27,7 @@ public interface Context {
 
   default <T> void executeBlocking(Handler<Future<T>> blockingCodeHandler,
       Handler<AsyncResult<T>> resultHandler) {
-    executeBlocking(blockingCodeHandler, true,
-        resultHandler);
+    executeBlocking(blockingCodeHandler, true, resultHandler);
   }
 
   void addCloseHook(Closeable hook);
