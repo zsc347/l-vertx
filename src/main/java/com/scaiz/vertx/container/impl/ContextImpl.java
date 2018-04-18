@@ -33,8 +33,8 @@ public abstract class ContextImpl implements Context {
   private ConcurrentMap<Object, Object> contextData;
   private Handler<Throwable> exceptionHandler;
 
-  private final WorkerPool workerPool;
-  private final TaskQueue orderedTasks;
+  final WorkerPool workerPool;
+  final TaskQueue orderedTasks;
 
   private final WorkerPool internalWorkerPool;
   private final TaskQueue internalOrderedTasks;
@@ -66,7 +66,7 @@ public abstract class ContextImpl implements Context {
     }
   }
 
-  static void setCurrentThreadContext(ContextImpl context) {
+  private static void setCurrentThreadContext(ContextImpl context) {
     Thread current = Thread.currentThread();
     if (current instanceof VertxThread) {
       ((VertxThread) current).setContext(context);
@@ -173,7 +173,7 @@ public abstract class ContextImpl implements Context {
   }
 
 
-  protected Runnable wrapTask(ContextTask cTask, Handler<Void> hTask) {
+  Runnable wrapTask(ContextTask cTask, Handler<Void> hTask) {
     return () -> {
       Thread tc = Thread.currentThread();
       if (!(tc instanceof VertxThread)) {

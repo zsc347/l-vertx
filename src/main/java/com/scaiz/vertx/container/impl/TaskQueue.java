@@ -10,7 +10,7 @@ public class TaskQueue {
 
   private Executor current;
 
-  public TaskQueue() {
+  TaskQueue() {
     this.runner = this::run;
   }
 
@@ -37,7 +37,7 @@ public class TaskQueue {
   }
 
 
-  public void execute(Runnable task, Executor exec) {
+  void execute(Runnable task, Executor exec) {
     synchronized (tasks) {
       tasks.add(new Task(task, exec));
       if (current == null) {
