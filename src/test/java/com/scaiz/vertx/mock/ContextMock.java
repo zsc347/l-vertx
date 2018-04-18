@@ -1,5 +1,6 @@
 package com.scaiz.vertx.mock;
 
+import com.scaiz.vertx.Vertx;
 import com.scaiz.vertx.async.AsyncResult;
 import com.scaiz.vertx.async.Future;
 import com.scaiz.vertx.container.Context;
@@ -47,6 +48,16 @@ public class ContextMock implements Context {
 
   @Override
   public Context exceptionHandler(Handler<Throwable> handler) {
+    return null;
+  }
+
+  @Override
+  public Handler<Throwable> exceptionHandler() {
+    return null;
+  }
+
+  @Override
+  public Vertx owner() {
     return null;
   }
 

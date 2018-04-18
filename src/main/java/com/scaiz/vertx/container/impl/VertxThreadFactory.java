@@ -1,5 +1,6 @@
 package com.scaiz.vertx.container.impl;
 
+import com.scaiz.vertx.Vertx;
 import com.scaiz.vertx.container.VertxThread;
 import java.util.Map;
 import java.util.WeakHashMap;

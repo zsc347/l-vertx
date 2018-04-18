@@ -1,19 +1,15 @@
-package com.scaiz.vertx.mock;
+package com.scaiz.vertx.impl;
 
-import com.scaiz.vertx.container.Context;
 import com.scaiz.vertx.Vertx;
 import com.scaiz.vertx.async.Handler;
+import com.scaiz.vertx.container.Context;
 import com.scaiz.vertx.eventbus.EventBus;
-import com.scaiz.vertx.eventbus.impl.EventBusImpl;
 
-public class VertxMock implements Vertx {
-
-  private Context currentContext = new ContextMock();
-  private EventBus eventBus;
+public class VertxImpl implements Vertx {
 
   @Override
   public void runOnContext(Handler<Void> action) {
-    action.handle(null);
+
   }
 
   @Override
@@ -28,20 +24,17 @@ public class VertxMock implements Vertx {
 
   @Override
   public Context currentContext() {
-    return currentContext;
+    return null;
   }
 
   @Override
   public Context getOrCreateContext() {
-    return currentContext;
+    return null;
   }
 
   @Override
   public EventBus eventBus() {
-    if (eventBus == null) {
-      eventBus = new EventBusImpl(this);
-    }
-    return eventBus;
+    return null;
   }
 
   @Override
