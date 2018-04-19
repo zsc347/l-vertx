@@ -2,33 +2,37 @@ package com.scaiz.vertx.container;
 
 import com.scaiz.vertx.container.impl.BlockedThreadChecker;
 import com.scaiz.vertx.container.impl.VertxThreadFactory;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
-public class BlockThreadCheckerTest {
+public class BlockedThreadCheckerTest {
 
   @Test
-  public void test() {
-    long testInternal = 1000;
-    long maxExecTime = 5000;
+  public void test() throws Exception {
+    CountDownLatch latch = new CountDownLatch(1);
+    long testInternal = 10;
+
+    long maxExecTime = 50*1000000;
+
     BlockedThreadChecker checker = new BlockedThreadChecker(testInternal);
     VertxThreadFactory factory = new VertxThreadFactory("test", checker,
         false, maxExecTime);
     Thread thread = factory.newThread(() -> {
       Thread current = Thread.currentThread();
       if (current instanceof VertxThread) {
-        VertxThread vthread = (VertxThread) current;
-        vthread.executeStart();
+        VertxThread vt = (VertxThread) current;
+        vt.executeStart();
         try {
-          TimeUnit.SECONDS.sleep(6);
-        } catch (Exception e) {
+          TimeUnit.MILLISECONDS.sleep(60);
+        } catch (Exception ignored) {
 
         }
-        System.out.println("running in thread");
-        vthread.executeEnd();
+        vt.executeEnd();
+        latch.countDown();
       }
     });
     thread.start();
+    latch.await(1, TimeUnit.SECONDS);
   }
-
 }

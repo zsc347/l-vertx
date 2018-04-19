@@ -8,7 +8,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.WeakHashMap;
 
-public class BlockedThreadChecker {
+public class BlockedThreadChecker{
 
   private final Set<VertxThread> threads = Collections
       .newSetFromMap(new WeakHashMap<>());
@@ -27,11 +27,10 @@ public class BlockedThreadChecker {
             long timeLimit = thread.getMaxExecTime();
             if (execStart != 0 && dur > timeLimit) {
               String msg = "Thread " + thread + " has been blocked for " + (dur
-                  / 1000000) + " ms, time limit is " + (timeLimit / 1000000);
+                  / 1000000) + " ms, time limit is " + (timeLimit / 1000000) + " ms";
               VertxException stackTrace = new VertxException(msg);
               stackTrace.setStackTrace(thread.getStackTrace());
               // TODO add log implementation to print stacktrace
-              System.err.println(msg);
               System.err.println(stackTrace.toString());
             }
           }
