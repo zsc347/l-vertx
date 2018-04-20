@@ -2,11 +2,11 @@ package com.scaiz.vertx.container.impl;
 
 import java.util.concurrent.ExecutorService;
 
-class WorkerPool {
+public class WorkerPool {
 
   private final ExecutorService pool;
 
-  WorkerPool(ExecutorService pool) {
+  public WorkerPool(ExecutorService pool) {
     this.pool = pool;
   }
 

@@ -207,7 +207,7 @@ public class EventBusImpl implements EventBus {
       HandlerRegistration<T> registration, boolean replyHandler,
       boolean localOnly) {
     Objects.requireNonNull(address, "address");
-    Context context = vertx.currentContext();
+    Context context = Vertx.currentContext();
     boolean hasContext = context != null;
     if (!hasContext) {
       context = vertx.getOrCreateContext();

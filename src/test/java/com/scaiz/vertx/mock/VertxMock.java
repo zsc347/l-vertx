@@ -27,11 +27,6 @@ public class VertxMock implements Vertx {
   }
 
   @Override
-  public Context currentContext() {
-    return currentContext;
-  }
-
-  @Override
   public Context getOrCreateContext() {
     return currentContext;
   }

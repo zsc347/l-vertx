@@ -14,4 +14,16 @@ public class VertxOptions {
   public int getEventLoopPoolSize() {
     return 10;
   }
+
+  public int getWorkerPoolSize() {
+    return 5;
+  }
+
+  public long getMaxWorkerExecuteTime() {
+    return 60 * 1000;
+  }
+
+  public int getInternalBlockingPoolSize() {
+    return 5;
+  }
 }

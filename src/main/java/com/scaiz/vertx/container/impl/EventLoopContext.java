@@ -9,7 +9,7 @@ public class EventLoopContext extends ContextImpl {
 
   private EventLoop eventLoop;
 
-  EventLoopContext(VertxInternal vertx,
+  public EventLoopContext(VertxInternal vertx,
       ClassLoader tccl,
       WorkerPool internalWorkerPool,
       WorkerPool workerPool) {
