@@ -5,7 +5,7 @@ import com.scaiz.vertx.container.VertxInternal;
 
 public class WorkerContext extends ContextImpl {
 
-  WorkerContext(VertxInternal vertx,
+  public WorkerContext(VertxInternal vertx,
       ClassLoader tccl,
       WorkerPool internalWorkerPool,
       WorkerPool workerPool) {

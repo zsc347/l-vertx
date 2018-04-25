@@ -7,4 +7,6 @@ public interface VertxInternal extends Vertx {
 
   EventLoopGroup getEventLoopGroup();
 
+
+
 }

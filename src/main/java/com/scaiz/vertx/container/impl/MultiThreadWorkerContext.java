@@ -5,7 +5,7 @@ import com.scaiz.vertx.container.VertxInternal;
 
 public class MultiThreadWorkerContext extends WorkerContext {
 
-  MultiThreadWorkerContext(VertxInternal vertx,
+  public MultiThreadWorkerContext(VertxInternal vertx,
       ClassLoader tccl,
       WorkerPool internalWorkerPool,
       WorkerPool workerPool) {

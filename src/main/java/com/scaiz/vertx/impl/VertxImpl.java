@@ -8,8 +8,11 @@ import com.scaiz.vertx.async.Handler;
 import com.scaiz.vertx.container.Context;
 import com.scaiz.vertx.container.VertxInternal;
 import com.scaiz.vertx.container.impl.BlockedThreadChecker;
+import com.scaiz.vertx.container.impl.ContextImpl;
 import com.scaiz.vertx.container.impl.EventLoopContext;
+import com.scaiz.vertx.container.impl.MultiThreadWorkerContext;
 import com.scaiz.vertx.container.impl.VertxThreadFactory;
+import com.scaiz.vertx.container.impl.WorkerContext;
 import com.scaiz.vertx.container.impl.WorkerPool;
 import com.scaiz.vertx.eventbus.EventBus;
 import io.netty.channel.EventLoopGroup;
@@ -109,5 +112,19 @@ public class VertxImpl implements VertxInternal {
     return new EventLoopContext(this,
         tccl, this.internalBlockingPool,
         workerPool != null ? workerPool : this.workerPool);
+  }
+
+  public ContextImpl createWorkerContext(boolean multiThreaded,
+      WorkerPool workerPool,
+      ClassLoader tccl) {
+    if (workerPool == null) {
+      workerPool = this.workerPool;
+    }
+    if (multiThreaded) {
+      return new MultiThreadWorkerContext(this, tccl, internalBlockingPool,
+          workerPool);
+    } else {
+      return new WorkerContext(this, tccl, internalBlockingPool, workerPool);
+    }
   }
 }
