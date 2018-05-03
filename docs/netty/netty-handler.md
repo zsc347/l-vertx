@@ -1,0 +1,16 @@
+## IdleStateHandler
+Netty的IdleStateHandler心跳机制主要是用来检测远端是否存活，
+如果不存活或活跃则对空闲Socket连接进行处理避免资源的浪费.
+
+由于网络可能出现异常中断，因此需要一种机制来保证连接有效性。
+心跳机制用于告知通信的对方自己依然在线。
+在客户端与服务器长时间没有数据交互时，即处于Idle状态时，客户端或服务器会发送一个特殊
+的数据包给对方。当对方收到这个数据报文后，也立即发送一个特殊的数据报文回应。
+此即一个PING-PONG交互。当某一端收到心跳消息后，就知道了对方仍然在线。这样就确保了TCP的有效性。
+
+TCP协议层具备KeepAlive机制，此机制依赖系统层实现，默认心跳时间为2h，不够灵活。
+应用层可以自定义心跳机制。
+
+Netty心跳机制可以通过IdleStateHandler实现，通过在pipeline中添加IdleStateHandler
+并且在ChannelInboundHandlerAdapter中处理IdleStateEvent事件来实现主动关闭连接。
+
