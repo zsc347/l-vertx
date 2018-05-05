@@ -3,7 +3,6 @@ package com.scaiz.vertx.net;
 import com.scaiz.vertx.async.AsyncResult;
 import com.scaiz.vertx.async.Handler;
 import com.scaiz.vertx.streams.ReadStream;
-import java.net.SocketAddress;
 
 public interface NetServer {
 
