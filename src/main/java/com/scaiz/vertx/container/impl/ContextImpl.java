@@ -29,6 +29,9 @@ public abstract class ContextImpl implements Context {
       = Boolean.getBoolean(DISABLE_TIMINGS_PROP_NAME);
 
   private final ClassLoader tccl;
+  protected final EventLoop eventLoop;
+
+
   private CloseHooks closeHooks;
   private ConcurrentMap<Object, Object> contextData;
   private Handler<Throwable> exceptionHandler;
@@ -40,7 +43,6 @@ public abstract class ContextImpl implements Context {
   private final TaskQueue internalOrderedTasks;
   private Vertx owner;
   private VertxThread contextThread;
-
 
   ContextImpl(VertxInternal vertx, ClassLoader tccl,
       WorkerPool internalWorkerPool,
@@ -55,6 +57,28 @@ public abstract class ContextImpl implements Context {
     this.orderedTasks = new TaskQueue();
 
     this.owner = vertx;
+    this.eventLoop = getEventLoop(vertx);
+  }
+
+  ContextImpl(VertxInternal vertx, EventLoop eventLoop, ClassLoader tccl,
+      WorkerPool internalWorkerPool,
+      WorkerPool workerPool) {
+    this.tccl = tccl;
+    this.closeHooks = new CloseHooks();
+
+    this.internalWorkerPool = internalWorkerPool;
+    this.internalOrderedTasks = new TaskQueue();
+
+    this.workerPool = workerPool;
+    this.orderedTasks = new TaskQueue();
+
+    this.owner = vertx;
+    this.eventLoop = eventLoop;
+  }
+
+
+  public EventLoop nettyEventLoop() {
+    return eventLoop;
   }
 
   private static EventLoop getEventLoop(VertxInternal vertx) {

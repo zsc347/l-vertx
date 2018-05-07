@@ -6,6 +6,7 @@ import com.scaiz.vertx.async.Closeable;
 import com.scaiz.vertx.async.Handler;
 import com.scaiz.vertx.container.Context;
 import com.scaiz.vertx.container.ContextUtil;
+import com.scaiz.vertx.container.VertxEventLoopGroup;
 import com.scaiz.vertx.container.VertxInternal;
 import com.scaiz.vertx.eventbus.HandlerHolder;
 import com.scaiz.vertx.eventbus.Handlers;
@@ -18,7 +19,6 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -42,7 +42,7 @@ public class NetServerImpl implements Closeable, NetServer {
   private int actualPort;
   private ServerID id;
   private ChannelGroup serverChannelGroup;
-  private EventLoopGroup availableWorkers;
+  private final VertxEventLoopGroup availableWorkers = new VertxEventLoopGroup();
 
 
   public NetServerImpl(VertxInternal vertx, NetServerOptions options) {
@@ -94,7 +94,7 @@ public class NetServerImpl implements Closeable, NetServer {
         bootstrap.childHandler(new ChannelInitializer<Channel>() {
           @Override
           protected void initChannel(Channel ch) throws Exception {
-            if(isPaused()) {
+            if (isPaused()) {
               ch.close();
               return;
             }

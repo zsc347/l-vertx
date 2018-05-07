@@ -7,14 +7,11 @@ import io.netty.channel.EventLoopGroup;
 
 public class EventLoopContext extends ContextImpl {
 
-  private EventLoop eventLoop;
-
   public EventLoopContext(VertxInternal vertx,
       ClassLoader tccl,
       WorkerPool internalWorkerPool,
       WorkerPool workerPool) {
     super(vertx, tccl, internalWorkerPool, workerPool);
-    this.eventLoop = nettyEventLoop(vertx);
   }
 
   EventLoopContext(VertxInternal vertx,
@@ -22,17 +19,7 @@ public class EventLoopContext extends ContextImpl {
       ClassLoader tccl,
       WorkerPool internalWorkerPool,
       WorkerPool workerPool) {
-    super(vertx, tccl, internalWorkerPool, workerPool);
-    this.eventLoop = eventLoop;
-  }
-
-  private static EventLoop nettyEventLoop(VertxInternal vertx) {
-    EventLoopGroup group = vertx.getEventLoopGroup();
-    if (group != null) {
-      return group.next();
-    } else {
-      return null;
-    }
+    super(vertx, eventLoop, tccl, internalWorkerPool, workerPool);
   }
 
   @Override
