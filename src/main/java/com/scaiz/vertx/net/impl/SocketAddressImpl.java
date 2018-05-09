@@ -1,6 +1,7 @@
 package com.scaiz.vertx.net.impl;
 
 import com.scaiz.vertx.net.SocketAddress;
+import java.net.InetSocketAddress;
 import java.util.Objects;
 
 public class SocketAddressImpl implements SocketAddress {
@@ -8,6 +9,11 @@ public class SocketAddressImpl implements SocketAddress {
   private final String hostAddress;
   private final int port;
   private final String path;
+
+  public SocketAddressImpl(InetSocketAddress address) {
+    this(address.getPort(), address.getAddress().getHostAddress());
+  }
+
 
   public SocketAddressImpl(String path) {
     this.port = -1;

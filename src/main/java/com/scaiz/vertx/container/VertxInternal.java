@@ -11,4 +11,6 @@ public interface VertxInternal extends Vertx {
   EventLoopGroup getEventLoopGroup();
 
   Map<ServerID, NetServerImpl> sharedNetServers();
+
+  Context getContext();
 }

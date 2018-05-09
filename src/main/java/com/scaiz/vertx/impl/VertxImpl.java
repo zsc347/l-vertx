@@ -15,8 +15,11 @@ import com.scaiz.vertx.container.impl.VertxThreadFactory;
 import com.scaiz.vertx.container.impl.WorkerContext;
 import com.scaiz.vertx.container.impl.WorkerPool;
 import com.scaiz.vertx.eventbus.EventBus;
+import com.scaiz.vertx.net.impl.NetServerImpl;
+import com.scaiz.vertx.net.impl.ServerID;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -97,6 +100,11 @@ public class VertxImpl implements VertxInternal {
   @Override
   public EventLoopGroup getEventLoopGroup() {
     return eventLoopGroup;
+  }
+
+  @Override
+  public Map<ServerID, NetServerImpl> sharedNetServers() {
+    return null;
   }
 
   public Context getContext() {

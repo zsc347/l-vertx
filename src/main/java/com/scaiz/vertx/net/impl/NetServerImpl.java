@@ -8,6 +8,7 @@ import com.scaiz.vertx.container.Context;
 import com.scaiz.vertx.container.ContextUtil;
 import com.scaiz.vertx.container.VertxEventLoopGroup;
 import com.scaiz.vertx.container.VertxInternal;
+import com.scaiz.vertx.container.impl.ContextImpl;
 import com.scaiz.vertx.eventbus.HandlerHolder;
 import com.scaiz.vertx.eventbus.Handlers;
 import com.scaiz.vertx.net.NetServer;
@@ -19,6 +20,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.EventLoop;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -43,6 +45,8 @@ public class NetServerImpl implements Closeable, NetServer {
   private ServerID id;
   private ChannelGroup serverChannelGroup;
   private final VertxEventLoopGroup availableWorkers = new VertxEventLoopGroup();
+  private NetHandlerManager<NetHandlers> handlerManager =
+      new NetHandlerManager<>(availableWorkers);
 
 
   public NetServerImpl(VertxInternal vertx, NetServerOptions options) {
@@ -98,10 +102,27 @@ public class NetServerImpl implements Closeable, NetServer {
               ch.close();
               return;
             }
+            NetHandlerHolder<NetHandlers> handler = handlerManager
+                .chooseHandler(ch.eventLoop());
+            if (handler != null) {
+              connected(handler, ch);
+            }
+
           }
         });
       }
     }
+  }
+
+  private void connected(NetHandlerHolder<NetHandlers> handler, Channel ch) {
+    EventLoop worker = ch.eventLoop();
+    ContextImpl.setCurrentThreadContext(handler.context);
+    NetServerImpl.this.initChannel(ch.pipeline());
+
+    VertxNetHandler nh = new VertxNetHandler();
+    ch.pipeline().addLast("handler", nh);
+
+
 
   }
 

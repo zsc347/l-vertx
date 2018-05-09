@@ -37,7 +37,7 @@ public interface NetSocket extends ReadStream<Buffer>, WriteStream<Buffer> {
 
   NetSocket write(String str, String enc);
 
-  SocketAddress remoteAddres();
+  SocketAddress remoteAddress();
 
   SocketAddress localAddress();
 

@@ -90,7 +90,7 @@ public abstract class ContextImpl implements Context {
     }
   }
 
-  private static void setCurrentThreadContext(ContextImpl context) {
+  public static void setCurrentThreadContext(ContextImpl context) {
     Thread current = Thread.currentThread();
     if (current instanceof VertxThread) {
       ((VertxThread) current).setContext(context);
@@ -280,5 +280,9 @@ public abstract class ContextImpl implements Context {
       return vt.isWorker() == isWorker;
     }
     return false;
+  }
+
+  public void executeFromIO(ContextTask task) {
+    wrapTask(task, null).run();
   }
 }
