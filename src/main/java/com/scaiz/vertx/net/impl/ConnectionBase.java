@@ -144,7 +144,7 @@ public abstract class ConnectionBase {
     }
   }
 
-  protected synchronized void handlerClosed() {
+  protected synchronized void handleClosed() {
     if (closeHandler != null) {
       vertx.runOnContext(closeHandler);
     }

@@ -10,7 +10,7 @@ public interface NetSocketInternal extends NetSocket {
 
   NetSocketInternal writeMessage(Object message);
 
-  NetSocketInternal wirteMessage(Object message,
+  NetSocketInternal writeMessage(Object message,
       Handler<AsyncResult<Void>> handler);
 
   NetSocketInternal messageHandler(Handler<Object> handler);
