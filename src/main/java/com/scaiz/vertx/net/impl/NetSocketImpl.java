@@ -162,7 +162,7 @@ public class NetSocketImpl extends ConnectionBase implements NetSocketInternal {
     return this;
   }
 
-  private void handleMessageReceived(Object message) {
+  public synchronized void handleMessageReceived(Object message) {
     checkContext();
     if (messageHandler != null) {
       messageHandler.handle(message);

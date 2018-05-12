@@ -16,6 +16,7 @@ import com.scaiz.vertx.net.SocketAddress;
 import com.scaiz.vertx.streams.ReadStream;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoop;
@@ -23,13 +24,16 @@ import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.GlobalEventExecutor;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class NetServerImpl implements Closeable, NetServer {
 
   private final VertxInternal vertx;
   private final NetServerOptions options;
   private final Context creatingContext;
+  private final Map<Channel, NetSocketImpl> socketMap = new ConcurrentHashMap<>();
 
   private boolean paused;
   private volatile boolean listening;
@@ -105,20 +109,36 @@ public class NetServerImpl implements Closeable, NetServer {
             if (handler != null) {
               connected(handler, ch);
             }
-
           }
         });
+
+        applyConnectionOptions(bootstrap);
       }
     }
+  }
+
+  private void applyConnectionOptions(ServerBootstrap bootstrap) {
+
   }
 
   private void connected(NetHandlerHolder<HandlerPair> handlerHolder,
       Channel ch) {
     ContextImpl.setCurrentThreadContext(handlerHolder.context);
     NetServerImpl.this.initChannel(ch.pipeline());
-    VertxNetHandler nh = new VertxNetHandler();
-    ch.pipeline().addLast("handler", nh);
 
+    VertxNetHandler nh = new VertxNetHandler(ctx ->
+        new NetSocketImpl(vertx, ctx, handlerHolder.context)) {
+      @Override
+      protected void handleMessage(NetSocketImpl conn,
+          ContextImpl context, ChannelHandlerContext chctx, Object msg) {
+        conn.handleMessageReceived(msg);
+      }
+    };
+
+    nh.setAddHandler(conn -> socketMap.put(ch, conn));
+    nh.setRemoveHandler(conn -> socketMap.remove(ch));
+
+    ch.pipeline().addLast("handler", nh);
     NetSocketImpl sock = nh.getConnection();
     handlerHolder.context.executeFromIO(() ->
         handlerHolder.handler.connectionHandler.handle(sock));
