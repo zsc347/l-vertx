@@ -20,4 +20,8 @@ public class VertxNetHandler implements ChannelHandler {
       throws Exception {
 
   }
+
+  public NetSocketImpl getConnection() {
+    return null;
+  }
 }

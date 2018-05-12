@@ -9,8 +9,6 @@ import com.scaiz.vertx.container.ContextUtil;
 import com.scaiz.vertx.container.VertxEventLoopGroup;
 import com.scaiz.vertx.container.VertxInternal;
 import com.scaiz.vertx.container.impl.ContextImpl;
-import com.scaiz.vertx.eventbus.HandlerHolder;
-import com.scaiz.vertx.eventbus.Handlers;
 import com.scaiz.vertx.net.NetServer;
 import com.scaiz.vertx.net.NetServerOptions;
 import com.scaiz.vertx.net.NetSocket;
@@ -45,7 +43,7 @@ public class NetServerImpl implements Closeable, NetServer {
   private ServerID id;
   private ChannelGroup serverChannelGroup;
   private final VertxEventLoopGroup availableWorkers = new VertxEventLoopGroup();
-  private NetHandlerManager<NetHandlers> handlerManager =
+  private NetHandlerManager<HandlerPair> handlerManager =
       new NetHandlerManager<>(availableWorkers);
 
 
@@ -102,7 +100,7 @@ public class NetServerImpl implements Closeable, NetServer {
               ch.close();
               return;
             }
-            NetHandlerHolder<NetHandlers> handler = handlerManager
+            NetHandlerHolder<HandlerPair> handler = handlerManager
                 .chooseHandler(ch.eventLoop());
             if (handler != null) {
               connected(handler, ch);
@@ -114,16 +112,16 @@ public class NetServerImpl implements Closeable, NetServer {
     }
   }
 
-  private void connected(NetHandlerHolder<NetHandlers> handler, Channel ch) {
-    EventLoop worker = ch.eventLoop();
-    ContextImpl.setCurrentThreadContext(handler.context);
+  private void connected(NetHandlerHolder<HandlerPair> handlerHolder,
+      Channel ch) {
+    ContextImpl.setCurrentThreadContext(handlerHolder.context);
     NetServerImpl.this.initChannel(ch.pipeline());
-
     VertxNetHandler nh = new VertxNetHandler();
     ch.pipeline().addLast("handler", nh);
 
-
-
+    NetSocketImpl sock = nh.getConnection();
+    handlerHolder.context.executeFromIO(() ->
+        handlerHolder.handler.connectionHandler.handle(sock));
   }
 
   protected synchronized void pauseAccepting() {

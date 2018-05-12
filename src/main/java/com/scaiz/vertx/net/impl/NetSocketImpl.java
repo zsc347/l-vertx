@@ -10,7 +10,6 @@ import com.scaiz.vertx.eventbus.Message;
 import com.scaiz.vertx.eventbus.MessageConsumer;
 import com.scaiz.vertx.net.NetSocket;
 import com.scaiz.vertx.net.NetSocketInternal;
-import com.scaiz.vertx.net.SocketAddress;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
@@ -178,7 +177,7 @@ public class NetSocketImpl extends ConnectionBase implements NetSocketInternal {
 
   @Override
   public String writeHandlerID() {
-    return null;
+    return writeHandlerId;
   }
 
   @Override
@@ -253,7 +252,7 @@ public class NetSocketImpl extends ConnectionBase implements NetSocketInternal {
     public void handle(Object event) {
       if (event instanceof ByteBuf) {
         ByteBuf byteBuf = (ByteBuf) event;
-        byteBuf = VertxHandler.safeBuffer(byteBuf, allocator);
+        byteBuf = ByteBufUtil.safeBuffer(byteBuf, allocator);
         Buffer data = Buffer.buffer(byteBuf);
         if (paused) {
           if (pendingData == null) {

@@ -4,17 +4,18 @@ import com.scaiz.vertx.async.Handler;
 import com.scaiz.vertx.net.NetSocket;
 import java.util.Objects;
 
-public class NetHandlers {
+public class HandlerPair {
 
   final Handler<NetSocket> connectionHandler;
   final Handler<Throwable> exceptionHandler;
 
-  public NetHandlers(Handler<NetSocket> connectionHandler,
+  public HandlerPair(Handler<NetSocket> connectionHandler,
       Handler<Throwable> exceptionHandler) {
     this.connectionHandler = connectionHandler;
     this.exceptionHandler = exceptionHandler;
   }
 
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -23,12 +24,13 @@ public class NetHandlers {
       return false;
     }
 
-    NetHandlers that = (NetHandlers) o;
+    HandlerPair that = (HandlerPair) o;
 
     return Objects.equals(connectionHandler, that.connectionHandler)
         && Objects.equals(exceptionHandler, that.exceptionHandler);
   }
 
+  @Override
   public int hashCode() {
     int result = 0;
     if (connectionHandler != null) {

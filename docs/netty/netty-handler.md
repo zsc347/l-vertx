@@ -14,3 +14,5 @@ TCP协议层具备KeepAlive机制，此机制依赖系统层实现，默认心�
 Netty心跳机制可以通过IdleStateHandler实现，通过在pipeline中添加IdleStateHandler
 并且在ChannelInboundHandlerAdapter中处理IdleStateEvent事件来实现主动关闭连接。
 
+## ChannelDuplexHandler
+是ChannelInboundHandler和ChannelOutboundHandler的组合
