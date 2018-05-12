@@ -1,27 +1,30 @@
 package com.scaiz.vertx.net.impl;
 
-import io.netty.channel.ChannelHandler;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
+import java.util.function.Function;
 
-public class VertxNetHandler implements ChannelHandler {
+public abstract class VertxNetHandler extends VertxHandler<NetSocketImpl> {
+
+  private final Function<ChannelHandlerContext, NetSocketImpl>
+      connectionFactory;
+
+  public VertxNetHandler(Function<ChannelHandlerContext, NetSocketImpl>
+      connectionFactory) {
+    this.connectionFactory = connectionFactory;
+  }
+
+  public VertxNetHandler(NetSocketImpl conn) {
+    this(ctx -> conn);
+  }
 
   @Override
   public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
-
+    setConnection(connectionFactory.apply(ctx));
   }
 
   @Override
-  public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
-
-  }
-
-  @Override
-  public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
-      throws Exception {
-
-  }
-
-  public NetSocketImpl getConnection() {
-    return null;
+  protected Object decode(Object msg, ByteBufAllocator alloc) {
+    return msg;
   }
 }

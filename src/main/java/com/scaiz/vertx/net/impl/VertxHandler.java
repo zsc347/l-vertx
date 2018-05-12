@@ -108,7 +108,7 @@ public abstract class VertxHandler<C extends ConnectionBase> extends
     ctx.fireUserEventTriggered(evt);
   }
 
-  
+
 
   protected abstract void handleMessage(C conn, ContextImpl context,
       ChannelHandlerContext chctx,
