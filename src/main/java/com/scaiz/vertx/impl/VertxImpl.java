@@ -17,6 +17,7 @@ import com.scaiz.vertx.container.impl.WorkerPool;
 import com.scaiz.vertx.eventbus.EventBus;
 import com.scaiz.vertx.net.impl.NetServerImpl;
 import com.scaiz.vertx.net.impl.ServerID;
+import com.scaiz.vertx.net.transport.Transport;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import java.util.Map;
@@ -104,6 +105,11 @@ public class VertxImpl implements VertxInternal {
 
   @Override
   public Map<ServerID, NetServerImpl> sharedNetServers() {
+    return null;
+  }
+
+  @Override
+  public Transport transport() {
     return null;
   }
 
