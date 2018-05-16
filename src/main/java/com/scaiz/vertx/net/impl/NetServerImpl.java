@@ -22,6 +22,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoop;
 import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.ChannelGroupFuture;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.GlobalEventExecutor;
@@ -39,10 +40,8 @@ public class NetServerImpl implements Closeable, NetServer {
 
   private boolean paused;
   private volatile boolean listening;
+  private NetServerImpl actualServer;
 
-
-  private Handler<NetSocket> handler;
-  private Handler<Throwable> exceptionHandler;
   private ContextImpl listenContext;
   private Handler<NetSocket> registeredHandler;
   private int actualPort;
@@ -51,9 +50,11 @@ public class NetServerImpl implements Closeable, NetServer {
   private final VertxEventLoopGroup availableWorkers = new VertxEventLoopGroup();
   private NetHandlerManager<HandlerPair> handlerManager =
       new NetHandlerManager<>(availableWorkers);
-
-
   private AsyncResolveConnectHelper bindFuture;
+
+  private Handler<NetSocket> handler;
+  private Handler<Throwable> exceptionHandler;
+  private Handler<Void> endHandler;
 
 
   public NetServerImpl(VertxInternal vertx, NetServerOptions options) {
@@ -70,15 +71,14 @@ public class NetServerImpl implements Closeable, NetServer {
     }
   }
 
-  protected void initChannel(ChannelPipeline pipeline) {
+  private void initChannel(ChannelPipeline pipeline) {
     if (options.getIdleTimeout() > 0) {
       pipeline.addLast("idle",
           new IdleStateHandler(0, 0, options.getIdleTimeout()));
     }
   }
 
-
-  public synchronized void listen(Handler<NetSocket> handler,
+  private synchronized void listen(Handler<NetSocket> handler,
       SocketAddress socketAddress, Handler<AsyncResult<Void>> listenHandler) {
     Objects.requireNonNull(handler, "handler not set");
     if (listening) {
@@ -104,7 +104,7 @@ public class NetServerImpl implements Closeable, NetServer {
 
         bootstrap.childHandler(new ChannelInitializer<Channel>() {
           @Override
-          protected void initChannel(Channel ch) throws Exception {
+          protected void initChannel(Channel ch) {
             if (isPaused()) {
               ch.close();
               return;
@@ -159,9 +159,54 @@ public class NetServerImpl implements Closeable, NetServer {
           vertx.sharedNetServers().put(id, this);
         }
 
-        // TODO continue
+        actualServer = this;
+      } else {
+        actualServer = shared;
+        this.actualPort = shared.actualPort();
+        actualServer.handlerManager.addHandler(new HandlerPair(
+            handler, exceptionHandler), listenContext);
       }
+
+      actualServer.bindFuture.addListener(res -> {
+        if (listenHandler != null) {
+          AsyncResult<Void> ares;
+          if (res.succeeded()) {
+            ares = Future.succeededFuture();
+          } else {
+            listening = false;
+            ares = Future.failedFuture(res.cause());
+          }
+          listenContext.runOnContext(v -> listenHandler.handle(ares));
+        } else {
+          if (res.failed()) {
+            System.err.println("Failed to listen ");
+            res.cause().printStackTrace();
+            listening = false;
+          }
+        }
+      });
     }
+  }
+
+  private NetServer listen(int port, String host,
+      Handler<AsyncResult<NetServer>> listenHandler) {
+    return listen(SocketAddress.inetSocketAddress(port,host ), listenHandler);
+  }
+
+  @Override
+  public NetServer listen(Handler<AsyncResult<NetServer>> listenHandler) {
+    return listen(options.getPort(), options.getHost(), listenHandler);
+  }
+
+  @Override
+  public NetServer listen(SocketAddress localAddress,
+      Handler<AsyncResult<NetServer>> listenHandler) {
+    listen(handler, localAddress, ar -> {
+      if (listenHandler != null) {
+        listenHandler.handle(ar.map(this));
+      }
+    });
+    return this;
   }
 
   private void applyConnectionOptions(ServerBootstrap bootstrap) {
@@ -199,17 +244,12 @@ public class NetServerImpl implements Closeable, NetServer {
     paused = false;
   }
 
-  protected synchronized boolean isPaused() {
+  public synchronized boolean isPaused() {
     return paused;
   }
 
-  protected boolean isListening() {
+  public boolean isListening() {
     return listening;
-  }
-
-  @Override
-  public ReadStream<NetSocket> connectStream() {
-    return null;
   }
 
   @Override
@@ -226,48 +266,6 @@ public class NetServerImpl implements Closeable, NetServer {
     return handler;
   }
 
-  @Override
-  public NetServer listen(Handler<AsyncResult<NetServer>> listenHandler) {
-    return null;
-  }
-
-  @Override
-  public NetServer listen() {
-    return null;
-  }
-
-  @Override
-  public NetServer listen(int port, String host,
-      Handler<AsyncResult<NetServer>> listenHandler) {
-    return null;
-  }
-
-  @Override
-  public NetServer listen(int port, String host) {
-    return null;
-  }
-
-  @Override
-  public NetServer listen(int port,
-      Handler<AsyncResult<NetServer>> listenHandler) {
-    return null;
-  }
-
-  @Override
-  public NetServer listen(int port) {
-    return null;
-  }
-
-  @Override
-  public NetServer listen(SocketAddress localAddress) {
-    return null;
-  }
-
-  @Override
-  public NetServer listen(SocketAddress localAddress,
-      Handler<AsyncResult<NetServer>> listenHandler) {
-    return null;
-  }
 
   @Override
   public NetServer exceptionHandler(Handler<Throwable> exceptionHandler) {
@@ -279,18 +277,82 @@ public class NetServerImpl implements Closeable, NetServer {
     return this;
   }
 
-  @Override
-  public void close() {
+  private void executeCloseDone(ContextImpl closeContext,
+      Handler<AsyncResult<Void>> done, Exception e) {
+    Future<Void> future = e == null
+        ? Future.succeededFuture()
+        : Future.failedFuture(e);
+    closeContext.runOnContext(v -> done.handle(future));
+  }
 
+  private void actualClose(ContextImpl closeContext,
+      Handler<AsyncResult<Void>> done) {
+    if (id != null) {
+      vertx.sharedNetServers().remove(id);
+    }
+
+    for (NetSocketImpl sock : socketMap.values()) {
+      sock.close();
+    }
+
+    ChannelGroupFuture future = serverChannelGroup.close();
+    if (done != null) {
+      future.addListener(
+          cg -> executeCloseDone(closeContext, done, future.cause()));
+    }
   }
 
   @Override
   public void close(Handler<AsyncResult<Void>> completionHandler) {
+    if (creatingContext != null) {
+      creatingContext.removeCloseHook(this);
+    }
+    Handler<AsyncResult<Void>> done;
+    if (endHandler != null) {
+      Handler<Void> handler = endHandler;
+      endHandler = null;
+      done = ar -> {
+        if (ar.succeeded()) {
+          handler.handle(ar.result());
+        }
+        if (completionHandler != null) {
+          completionHandler.handle(ar);
+        }
+      };
+    } else {
+      done = completionHandler;
+    }
+    ContextImpl context = vertx.getOrCreateContext();
 
+    if (!listening) {
+      if (done != null) {
+        executeCloseDone(context, done, null);
+      }
+      return;
+    }
+
+    listening = false;
+
+    synchronized (vertx.sharedNetServers()) {
+      if (actualServer != null) {
+        actualServer.handlerManager.removeHandler(new HandlerPair(
+            registeredHandler, exceptionHandler), listenContext);
+        if (actualServer.handlerManager.hasHandlers()) {
+          // still has handler so not really close it
+          if (done != null) {
+            executeCloseDone(context, done, null);
+          } else {
+            actualServer.actualClose(context, done);
+          }
+        }
+      } else {
+        context.runOnContext(v -> done.handle(Future.succeededFuture()));
+      }
+    }
   }
 
   @Override
   public int actualPort() {
-    return 0;
+    return actualPort;
   }
 }

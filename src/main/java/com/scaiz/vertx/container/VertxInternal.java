@@ -19,7 +19,7 @@ public interface VertxInternal extends Vertx {
 
   Transport transport();
 
-  Context getContext();
+  ContextImpl getContext();
 
   ContextImpl getOrCreateContext();
 

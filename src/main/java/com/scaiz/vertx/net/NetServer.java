@@ -6,8 +6,6 @@ import com.scaiz.vertx.streams.ReadStream;
 
 public interface NetServer {
 
-  ReadStream<NetSocket> connectStream();
-
   NetServer connectHandler(Handler<NetSocket> handler);
 
   Handler<NetSocket> connectHandler();
@@ -19,35 +17,20 @@ public interface NetServer {
     return this;
   }
 
-
-  NetServer listen(int port, String host,
-      Handler<AsyncResult<NetServer>> listenHandler);
-
-  default NetServer listen(int port, String host) {
-    listen(port, host, null);
-    return this;
-  }
-
-  NetServer listen(int port, Handler<AsyncResult<NetServer>> listenHandler);
-
-  default NetServer listen(int port) {
-    listen(port, (Handler<AsyncResult<NetServer>>) null);
-    return this;
-  }
-
-  NetServer listen(SocketAddress localAddress);
-
   NetServer listen(SocketAddress localAddress,
       Handler<AsyncResult<NetServer>> listenHandler);
 
+  default NetServer listen(SocketAddress localAddress) {
+    return listen(localAddress, null);
+  }
+
   NetServer exceptionHandler(Handler<Throwable> exceptionHandler);
 
-  void close();
+  default void close() {
+    close(null);
+  }
 
   void close(Handler<AsyncResult<Void>> completionHandler);
 
   int actualPort();
-
-
-
 }
