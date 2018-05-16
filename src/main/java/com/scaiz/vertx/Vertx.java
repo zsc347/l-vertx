@@ -21,8 +21,6 @@ public interface Vertx {
 
   long setTimer(long delay, Handler<Long> handler);
 
-  Context getOrCreateContext();
-
   EventBus eventBus();
 
   Handler<Throwable> exceptionHandler();

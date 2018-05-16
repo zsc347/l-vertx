@@ -3,6 +3,8 @@ package com.scaiz.vertx.net.transport;
 import com.scaiz.vertx.net.NetServerOptions;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ServerChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -42,6 +44,13 @@ public class Transport {
       throw new IllegalArgumentException();
     }
     return NioSocketChannel.class;
+  }
+
+  public Class<? extends ServerChannel> serverChannelType(boolean domain) {
+    if(domain) {
+      throw new IllegalArgumentException();
+    }
+    return NioServerSocketChannel.class;
   }
 
   public SocketAddress convert(com.scaiz.vertx.net.SocketAddress address,

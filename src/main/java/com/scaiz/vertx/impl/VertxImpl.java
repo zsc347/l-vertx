@@ -20,6 +20,7 @@ import com.scaiz.vertx.net.impl.ServerID;
 import com.scaiz.vertx.net.transport.Transport;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import java.net.InetAddress;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -79,13 +80,20 @@ public class VertxImpl implements VertxInternal {
   }
 
   @Override
-  public Context getOrCreateContext() {
-    Context context = getContext();
+  public ContextImpl getOrCreateContext() {
+    ContextImpl context = getContext();
     if (context == null) {
       return createEventLoopContext(this.workerPool,
           Thread.currentThread().getContextClassLoader());
     }
     return context;
+  }
+
+  @Override
+  public void resolveAddress(String hostname,
+      Handler<AsyncResult<InetAddress>> resultHandler) {
+
+
   }
 
   @Override
@@ -113,10 +121,10 @@ public class VertxImpl implements VertxInternal {
     return null;
   }
 
-  public Context getContext() {
+  public ContextImpl getContext() {
     Context context = Vertx.currentContext();
     if (context != null && context.owner() == this) {
-      return context;
+      return (ContextImpl) context;
     }
     return null;
   }

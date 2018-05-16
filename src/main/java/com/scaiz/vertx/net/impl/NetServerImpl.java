@@ -3,6 +3,7 @@ package com.scaiz.vertx.net.impl;
 import com.scaiz.vertx.Vertx;
 import com.scaiz.vertx.async.AsyncResult;
 import com.scaiz.vertx.async.Closeable;
+import com.scaiz.vertx.async.Future;
 import com.scaiz.vertx.async.Handler;
 import com.scaiz.vertx.container.Context;
 import com.scaiz.vertx.container.ContextUtil;
@@ -24,6 +25,7 @@ import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.GlobalEventExecutor;
+import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,7 +43,7 @@ public class NetServerImpl implements Closeable, NetServer {
 
   private Handler<NetSocket> handler;
   private Handler<Throwable> exceptionHandler;
-  private Context listenContext;
+  private ContextImpl listenContext;
   private Handler<NetSocket> registeredHandler;
   private int actualPort;
   private ServerID id;
@@ -49,6 +51,9 @@ public class NetServerImpl implements Closeable, NetServer {
   private final VertxEventLoopGroup availableWorkers = new VertxEventLoopGroup();
   private NetHandlerManager<HandlerPair> handlerManager =
       new NetHandlerManager<>(availableWorkers);
+
+
+  private AsyncResolveConnectHelper bindFuture;
 
 
   public NetServerImpl(VertxInternal vertx, NetServerOptions options) {
@@ -113,6 +118,48 @@ public class NetServerImpl implements Closeable, NetServer {
         });
 
         applyConnectionOptions(bootstrap);
+
+        handlerManager.addHandler(new HandlerPair(handler, exceptionHandler),
+            listenContext);
+
+        try {
+          bindFuture = AsyncResolveConnectHelper.doBind(vertx, socketAddress,
+              bootstrap);
+          bindFuture.addListener(res -> {
+            if (res.succeeded()) {
+              Channel ch = res.result();
+              System.out.println("Net server listening on " + (hostOrPath)
+                  + ":" + ch.localAddress());
+              // update port to actual port, - wildcard port 0 might have been used
+              if (NetServerImpl.this.actualPort != -1) {
+                NetServerImpl.this.actualPort = ((InetSocketAddress) ch
+                    .localAddress()).getPort();
+              }
+              NetServerImpl.this.id = new ServerID(
+                  NetServerImpl.this.actualPort, id.host);
+              serverChannelGroup.add(ch);
+              vertx.sharedNetServers().put(id, NetServerImpl.this);
+            } else {
+              vertx.sharedNetServers().remove(id);
+            }
+          });
+        } catch (Throwable t) {
+          // make sure send back the exception back through the handler
+          if (listenHandler != null) {
+            vertx.runOnContext(
+                v -> listenHandler.handle(Future.failedFuture(t)));
+          } else {
+            t.printStackTrace();
+          }
+          listening = false;
+          return;
+        }
+
+        if (actualPort != 0) {
+          vertx.sharedNetServers().put(id, this);
+        }
+
+        // TODO continue
       }
     }
   }

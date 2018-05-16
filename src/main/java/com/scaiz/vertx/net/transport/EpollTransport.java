@@ -56,7 +56,4 @@ public class EpollTransport extends Transport {
       return EpollServerSocketChannel.class;
     }
   }
-
-
-
 }

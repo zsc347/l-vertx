@@ -4,8 +4,8 @@ import java.util.Objects;
 
 public class ServerID {
 
-  private int port;
-  private String host;
+  int port;
+  String host;
 
   public ServerID(int port, String host) {
     this.port = port;
