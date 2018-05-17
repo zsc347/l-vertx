@@ -1,6 +1,7 @@
 package com.scaiz.vertx.net.transport;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ServerChannel;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollDomainSocketChannel;
 import io.netty.channel.epoll.EpollServerDomainSocketChannel;
@@ -49,7 +50,7 @@ public class EpollTransport extends Transport {
     }
   }
 
-  public Class<? extends Channel> serverChannelType(boolean domain) {
+  public Class<? extends ServerChannel> serverChannelType(boolean domain) {
     if (domain) {
       return EpollServerDomainSocketChannel.class;
     } else {

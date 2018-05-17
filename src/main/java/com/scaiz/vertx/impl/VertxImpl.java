@@ -33,11 +33,25 @@ public class VertxImpl implements VertxInternal {
   private WorkerPool workerPool;
   private WorkerPool internalBlockingPool;
 
+  private Transport transport;
+
+
   public VertxImpl() {
     this(new VertxOptions(), null);
   }
 
   private VertxImpl(VertxOptions options, Handler<AsyncResult<Vertx>> handler) {
+    Transport nativeTransport = Transport.nativeTransport();
+    if (nativeTransport != null && nativeTransport.isAvailable()) {
+      transport = nativeTransport;
+    } else {
+      if (nativeTransport != null && !nativeTransport.isAvailable()) {
+        System.err.println("Try to use native port failed");
+        nativeTransport.unavailabilityCause().printStackTrace();
+      }
+      transport = Transport.JDK;
+    }
+
     BlockedThreadChecker checker = new BlockedThreadChecker(
         options.getBlockedThreadCheckInterval());
     ThreadFactory eventLoopThreadFactory = new VertxThreadFactory(
@@ -93,7 +107,6 @@ public class VertxImpl implements VertxInternal {
   public void resolveAddress(String hostname,
       Handler<AsyncResult<InetAddress>> resultHandler) {
 
-
   }
 
   @Override
@@ -118,7 +131,7 @@ public class VertxImpl implements VertxInternal {
 
   @Override
   public Transport transport() {
-    return null;
+    return transport;
   }
 
   public ContextImpl getContext() {

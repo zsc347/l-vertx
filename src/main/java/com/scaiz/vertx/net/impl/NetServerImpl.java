@@ -1,11 +1,9 @@
 package com.scaiz.vertx.net.impl;
 
-import com.scaiz.vertx.Vertx;
 import com.scaiz.vertx.async.AsyncResult;
 import com.scaiz.vertx.async.Closeable;
 import com.scaiz.vertx.async.Future;
 import com.scaiz.vertx.async.Handler;
-import com.scaiz.vertx.container.Context;
 import com.scaiz.vertx.container.ContextUtil;
 import com.scaiz.vertx.container.VertxEventLoopGroup;
 import com.scaiz.vertx.container.VertxInternal;
@@ -14,13 +12,11 @@ import com.scaiz.vertx.net.NetServer;
 import com.scaiz.vertx.net.NetServerOptions;
 import com.scaiz.vertx.net.NetSocket;
 import com.scaiz.vertx.net.SocketAddress;
-import com.scaiz.vertx.streams.ReadStream;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoop;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.ChannelGroupFuture;
 import io.netty.channel.group.DefaultChannelGroup;
@@ -35,7 +31,7 @@ public class NetServerImpl implements Closeable, NetServer {
 
   private final VertxInternal vertx;
   private final NetServerOptions options;
-  private final Context creatingContext;
+  private final ContextImpl creatingContext;
   private final Map<Channel, NetSocketImpl> socketMap = new ConcurrentHashMap<>();
 
   private boolean paused;
@@ -52,7 +48,7 @@ public class NetServerImpl implements Closeable, NetServer {
       new NetHandlerManager<>(availableWorkers);
   private AsyncResolveConnectHelper bindFuture;
 
-  private Handler<NetSocket> handler;
+  private Handler<NetSocket> connectHandler;
   private Handler<Throwable> exceptionHandler;
   private Handler<Void> endHandler;
 
@@ -61,7 +57,7 @@ public class NetServerImpl implements Closeable, NetServer {
     this.vertx = vertx;
     this.options = new NetServerOptions(options);
 
-    this.creatingContext = Vertx.currentContext();
+    this.creatingContext = vertx.getContext();
     if (this.creatingContext != null) {
       if (ContextUtil.isMultiThreadedWorkerContext(this.creatingContext)) {
         throw new IllegalStateException(
@@ -190,7 +186,7 @@ public class NetServerImpl implements Closeable, NetServer {
 
   private NetServer listen(int port, String host,
       Handler<AsyncResult<NetServer>> listenHandler) {
-    return listen(SocketAddress.inetSocketAddress(port,host ), listenHandler);
+    return listen(SocketAddress.inetSocketAddress(port, host), listenHandler);
   }
 
   @Override
@@ -201,7 +197,7 @@ public class NetServerImpl implements Closeable, NetServer {
   @Override
   public NetServer listen(SocketAddress localAddress,
       Handler<AsyncResult<NetServer>> listenHandler) {
-    listen(handler, localAddress, ar -> {
+    listen(connectHandler, localAddress, ar -> {
       if (listenHandler != null) {
         listenHandler.handle(ar.map(this));
       }
@@ -210,7 +206,7 @@ public class NetServerImpl implements Closeable, NetServer {
   }
 
   private void applyConnectionOptions(ServerBootstrap bootstrap) {
-
+    vertx.transport().configure(options, bootstrap);
   }
 
   private void connected(NetHandlerHolder<HandlerPair> handlerHolder,
@@ -257,13 +253,13 @@ public class NetServerImpl implements Closeable, NetServer {
     if (isListening()) {
       throw new IllegalStateException("can not set handler when listening");
     }
-    this.handler = handler;
+    this.connectHandler = handler;
     return this;
   }
 
   @Override
   public Handler<NetSocket> connectHandler() {
-    return handler;
+    return connectHandler;
   }
 
 
@@ -279,10 +275,12 @@ public class NetServerImpl implements Closeable, NetServer {
 
   private void executeCloseDone(ContextImpl closeContext,
       Handler<AsyncResult<Void>> done, Exception e) {
-    Future<Void> future = e == null
-        ? Future.succeededFuture()
-        : Future.failedFuture(e);
-    closeContext.runOnContext(v -> done.handle(future));
+    if (done != null) {
+      Future<Void> future = e == null
+          ? Future.succeededFuture()
+          : Future.failedFuture(e);
+      closeContext.runOnContext(v -> done.handle(future));
+    }
   }
 
   private void actualClose(ContextImpl closeContext,
@@ -325,9 +323,7 @@ public class NetServerImpl implements Closeable, NetServer {
     ContextImpl context = vertx.getOrCreateContext();
 
     if (!listening) {
-      if (done != null) {
-        executeCloseDone(context, done, null);
-      }
+      executeCloseDone(context, done, null);
       return;
     }
 
@@ -339,11 +335,9 @@ public class NetServerImpl implements Closeable, NetServer {
             registeredHandler, exceptionHandler), listenContext);
         if (actualServer.handlerManager.hasHandlers()) {
           // still has handler so not really close it
-          if (done != null) {
-            executeCloseDone(context, done, null);
-          } else {
-            actualServer.actualClose(context, done);
-          }
+          executeCloseDone(context, done, null);
+        } else {
+          actualServer.actualClose(context, done);
         }
       } else {
         context.runOnContext(v -> done.handle(Future.succeededFuture()));
