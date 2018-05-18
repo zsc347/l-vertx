@@ -6,6 +6,7 @@ import com.scaiz.vertx.async.AsyncResult;
 import com.scaiz.vertx.async.Closeable;
 import com.scaiz.vertx.async.Future;
 import com.scaiz.vertx.async.Handler;
+import com.scaiz.vertx.container.VertxInternal;
 import com.scaiz.vertx.eventbus.DeliveryOptions;
 import com.scaiz.vertx.eventbus.EventBus;
 import com.scaiz.vertx.eventbus.HandlerHolder;
@@ -36,11 +37,11 @@ public class EventBusImpl implements EventBus {
       new CopyOnWriteArrayList<>();
   private final CodecManager codecManager = new CodecManager();
 
-  private final Vertx vertx;
+  private final VertxInternal vertx;
 
   private boolean started;
 
-  public EventBusImpl(Vertx vertx) {
+  public EventBusImpl(VertxInternal vertx) {
     this.vertx = vertx;
   }
 

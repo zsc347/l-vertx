@@ -4,6 +4,8 @@ import com.scaiz.vertx.async.Handler;
 import com.scaiz.vertx.container.Context;
 import com.scaiz.vertx.container.VertxThread;
 import com.scaiz.vertx.eventbus.EventBus;
+import com.scaiz.vertx.net.NetServer;
+import com.scaiz.vertx.net.NetServerOptions;
 
 public interface Vertx {
 
@@ -24,4 +26,10 @@ public interface Vertx {
   EventBus eventBus();
 
   Handler<Throwable> exceptionHandler();
+
+  NetServer createNetServer(NetServerOptions options);
+
+  default NetServer createNetServer() {
+    return createNetServer(new NetServerOptions());
+  }
 }

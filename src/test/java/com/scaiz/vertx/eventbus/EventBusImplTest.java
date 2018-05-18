@@ -4,7 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import com.scaiz.vertx.mock.VertxMock;
+import com.scaiz.vertx.Vertx;
+import com.scaiz.vertx.impl.VertxImpl;
 import java.util.LinkedList;
 import java.util.List;
 import org.junit.After;
@@ -17,7 +18,8 @@ public class EventBusImplTest {
 
   @Before
   public void setUp() {
-    eventBus = new VertxMock().eventBus();
+    Vertx vertx = new VertxImpl();
+    eventBus = vertx.eventBus();
     eventBus.start(ar -> {
       if (ar.failed()) {
         fail();

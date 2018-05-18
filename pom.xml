@@ -20,6 +20,13 @@
         </configuration>
       </plugin>
     </plugins>
+    <extensions>
+      <extension>
+        <groupId>kr.motd.maven</groupId>
+        <artifactId>os-maven-plugin</artifactId>
+        <version>1.6.0</version>
+      </extension>
+    </extensions>
   </build>
 
   <dependencies>
@@ -39,12 +46,7 @@
       <artifactId>netty-transport-native-epoll</artifactId>
       <version>4.1.22.Final</version>
       <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-transport-native-kqueue</artifactId>
-      <version>4.1.22.Final</version>
-      <optional>true</optional>
+      <classifier>${os.detected.name}-${os.detected.arch}</classifier>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>

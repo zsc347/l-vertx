@@ -2,6 +2,10 @@ package com.scaiz.vertx.net;
 
 public class NetServerOptions {
 
+  public NetServerOptions() {
+
+  }
+
   public NetServerOptions(NetServerOptions options) {
 
   }

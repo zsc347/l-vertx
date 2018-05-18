@@ -15,13 +15,18 @@ import com.scaiz.vertx.container.impl.VertxThreadFactory;
 import com.scaiz.vertx.container.impl.WorkerContext;
 import com.scaiz.vertx.container.impl.WorkerPool;
 import com.scaiz.vertx.eventbus.EventBus;
+import com.scaiz.vertx.eventbus.impl.EventBusImpl;
+import com.scaiz.vertx.net.NetServer;
+import com.scaiz.vertx.net.NetServerOptions;
 import com.scaiz.vertx.net.impl.NetServerImpl;
 import com.scaiz.vertx.net.impl.ServerID;
 import com.scaiz.vertx.net.transport.Transport;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import java.net.InetAddress;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -35,12 +40,17 @@ public class VertxImpl implements VertxInternal {
 
   private Transport transport;
 
+  private EventBus eventBus;
+
+  private final Map<ServerID, NetServerImpl> sharedNetServers = new HashMap<>();
+
 
   public VertxImpl() {
     this(new VertxOptions(), null);
   }
 
-  private VertxImpl(VertxOptions options, Handler<AsyncResult<Vertx>> handler) {
+  private VertxImpl(VertxOptions options,
+      Handler<AsyncResult<Vertx>> resultHandler) {
     Transport nativeTransport = Transport.nativeTransport();
     if (nativeTransport != null && nativeTransport.isAvailable()) {
       transport = nativeTransport;
@@ -73,9 +83,7 @@ public class VertxImpl implements VertxInternal {
     workerPool = new WorkerPool(workerExec);
     internalBlockingPool = new WorkerPool(internalBlockingExec);
 
-    if (handler != null) {
-      handler.handle(Future.succeededFuture(this));
-    }
+    createAndStartEventBus(options, resultHandler);
   }
 
   @Override
@@ -109,14 +117,43 @@ public class VertxImpl implements VertxInternal {
 
   }
 
+  private void createAndStartEventBus(VertxOptions options,
+      Handler<AsyncResult<Vertx>> resultHandler) {
+    eventBus = new EventBusImpl(this);
+    eventBus.start(ar -> {
+      if (ar.succeeded()) {
+        if (resultHandler != null) {
+          resultHandler.handle(Future.succeededFuture(this));
+        }
+      } else {
+        if (resultHandler != null) {
+          resultHandler.handle(Future.failedFuture(ar.cause()));
+        }
+      }
+    });
+  }
+
   @Override
   public EventBus eventBus() {
-    return null;
+    if (eventBus == null) {
+      // If reading from different thread, possibility that it has been set
+      // but not visible, so provide memory barrier here.
+      // why not just volatile ?
+      synchronized (this) {
+        return eventBus;
+      }
+    }
+    return eventBus;
   }
 
   @Override
   public Handler<Throwable> exceptionHandler() {
     return null;
+  }
+
+  @Override
+  public NetServer createNetServer(NetServerOptions options) {
+    return new NetServerImpl(this, options);
   }
 
   @Override
@@ -126,7 +163,7 @@ public class VertxImpl implements VertxInternal {
 
   @Override
   public Map<ServerID, NetServerImpl> sharedNetServers() {
-    return null;
+    return sharedNetServers;
   }
 
   @Override
