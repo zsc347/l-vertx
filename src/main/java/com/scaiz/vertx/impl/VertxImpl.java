@@ -57,7 +57,7 @@ public class VertxImpl implements VertxInternal {
     } else {
       if (nativeTransport != null && !nativeTransport.isAvailable()) {
         System.err.println("Try to use native port failed");
-        nativeTransport.unavailabilityCause().printStackTrace();
+        // nativeTransport.unavailabilityCause().printStackTrace();
       }
       transport = Transport.JDK;
     }

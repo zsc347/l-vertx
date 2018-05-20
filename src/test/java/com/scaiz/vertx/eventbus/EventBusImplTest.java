@@ -8,45 +8,25 @@ import com.scaiz.vertx.Vertx;
 import com.scaiz.vertx.impl.VertxImpl;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class EventBusImplTest {
 
+  private Vertx vertx;
   private EventBus eventBus;
+
 
   @Before
   public void setUp() {
     Vertx vertx = new VertxImpl();
     eventBus = vertx.eventBus();
-    eventBus.start(ar -> {
-      if (ar.failed()) {
-        fail();
-      }
-    });
   }
-
-  @Test
-  public void testClose() {
-    eventBus.close(ar -> {
-      if (ar.failed()) {
-        fail();
-      }
-    });
-  }
-
-
-  private void registerConsumer() {
-    MessageConsumer<String> consumer = eventBus.consumer("test.address");
-    consumer.handler(message ->
-        System.out.println("Receiver 1: " + message.body()));
-
-    eventBus.consumer("test.address", message -> {
-      System.out.println("Receiver 2: " + message.body());
-    });
-  }
-
 
   @Test
   public void testSendAndReceive() {
@@ -54,9 +34,22 @@ public class EventBusImplTest {
     eventBus.consumer("test.address", message -> {
       consumed.add((String) message.body());
     });
+
+    CountDownLatch latch = new CountDownLatch(1);
     eventBus.send("test.address", "message1");
     eventBus.send("test.address", "message2");
-    eventBus.send("test.address", "message3");
+    eventBus.send("test.address", "message3", reply -> {
+      if (reply.succeeded()) {
+        latch.countDown();
+      }
+    });
+
+    try {
+      latch.await(20, TimeUnit.MILLISECONDS);
+    } catch (Exception ignore) {
+      fail();
+    }
+
     assertTrue(consumed.size() == 3);
     assertTrue(consumed.contains("message1"));
     assertTrue(consumed.contains("message2"));
@@ -66,11 +59,23 @@ public class EventBusImplTest {
 
   @Test
   public void testSender() {
+    CountDownLatch latch = new CountDownLatch(1);
     final List<String> consumed = new LinkedList<>();
     eventBus.consumer("test.address",
         message -> consumed.add((String) message.body()));
     MessageProducer<String> sender = eventBus.sender("test.address");
-    sender.send("message");
+    sender.send("message", reply -> {
+      if (reply.succeeded()) {
+        latch.countDown();
+      }
+    });
+
+    try {
+      latch.await(2, TimeUnit.SECONDS);
+    } catch (Exception ignore) {
+      fail();
+    }
+
     assertTrue(consumed.contains("message"));
   }
 
@@ -96,6 +101,7 @@ public class EventBusImplTest {
   @Test
   public void testReply() {
     final List<String> replied = new LinkedList<>();
+    CountDownLatch latch = new CountDownLatch(1);
     eventBus.consumer("test.address",
         message -> message.reply("reply-message"));
     eventBus.send("test.address", "should got reply message",
@@ -103,13 +109,14 @@ public class EventBusImplTest {
         reply -> {
           if (reply.succeeded()) {
             replied.add((String) reply.result().body());
+            latch.countDown();
           }
         });
+    try {
+      latch.await(20, TimeUnit.MILLISECONDS);
+    } catch (Exception e) {
+      fail();
+    }
     assertTrue(replied.contains("reply-message"));
-  }
-
-  @After
-  public void clearUp() {
-    eventBus.close(null);
   }
 }
