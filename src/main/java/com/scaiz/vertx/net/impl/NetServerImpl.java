@@ -24,7 +24,6 @@ import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import java.net.InetSocketAddress;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class NetServerImpl implements Closeable, NetServer {
@@ -76,7 +75,9 @@ public class NetServerImpl implements Closeable, NetServer {
 
   private synchronized void listen(Handler<NetSocket> handler,
       SocketAddress socketAddress, Handler<AsyncResult<Void>> listenHandler) {
-    Objects.requireNonNull(handler, "handler not set");
+    if (handler == null) {
+      throw new IllegalStateException("Set connect handler first");
+    }
     if (listening) {
       throw new IllegalStateException("already listening");
     }

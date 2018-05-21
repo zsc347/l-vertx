@@ -1,5 +1,7 @@
 package com.scaiz.vertx;
 
+import com.scaiz.vertx.net.resolver.AddressResolverOptions;
+
 public class VertxOptions {
 
 
@@ -25,5 +27,9 @@ public class VertxOptions {
 
   public int getInternalBlockingPoolSize() {
     return 5;
+  }
+
+  public AddressResolverOptions getAddressResolverOptions() {
+    return new AddressResolverOptions();
   }
 }

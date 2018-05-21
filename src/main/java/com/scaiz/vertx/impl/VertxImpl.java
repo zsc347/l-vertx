@@ -18,6 +18,7 @@ import com.scaiz.vertx.eventbus.EventBus;
 import com.scaiz.vertx.eventbus.impl.EventBusImpl;
 import com.scaiz.vertx.net.NetServer;
 import com.scaiz.vertx.net.NetServerOptions;
+import com.scaiz.vertx.net.resolver.AddressResolver;
 import com.scaiz.vertx.net.impl.NetServerImpl;
 import com.scaiz.vertx.net.impl.ServerID;
 import com.scaiz.vertx.net.transport.Transport;
@@ -26,7 +27,6 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -43,6 +43,8 @@ public class VertxImpl implements VertxInternal {
   private EventBus eventBus;
 
   private final Map<ServerID, NetServerImpl> sharedNetServers = new HashMap<>();
+
+  private final AddressResolver addressResolver;
 
 
   public VertxImpl() {
@@ -82,6 +84,9 @@ public class VertxImpl implements VertxInternal {
                 options.getMaxWorkerExecuteTime()));
     workerPool = new WorkerPool(workerExec);
     internalBlockingPool = new WorkerPool(internalBlockingExec);
+
+    this.addressResolver = new AddressResolver(this,
+        options.getAddressResolverOptions());
 
     createAndStartEventBus(options, resultHandler);
   }
