@@ -119,7 +119,7 @@ public class VertxImpl implements VertxInternal {
   @Override
   public void resolveAddress(String hostname,
       Handler<AsyncResult<InetAddress>> resultHandler) {
-
+    this.addressResolver.resolveHostName(hostname, resultHandler);
   }
 
   private void createAndStartEventBus(VertxOptions options,

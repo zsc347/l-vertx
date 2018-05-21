@@ -13,13 +13,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 class AsyncResolveConnectHelper {
+
   private List<Handler<AsyncResult<Channel>>> handlers = new ArrayList<>();
   private AsyncResult<Channel> result;
   private ChannelFuture future;
 
 
   public synchronized void addListener(Handler<AsyncResult<Channel>> handler) {
-    if(result != null) {
+    if (result != null) {
       if (future != null) {
         future.addListener(v -> handler.handle(result));
       } else {
@@ -31,56 +32,61 @@ class AsyncResolveConnectHelper {
   }
 
   private synchronized void handle(ChannelFuture cf, AsyncResult<Channel> res) {
-      if(result != null) {
-        for(Handler<AsyncResult<Channel>> handler : handlers) {
-          handler.handle(res);
-        }
-        future = cf;
-        result = res;
-      } else {
-        throw new IllegalStateException("Already complete ...");
+    if (result == null) {
+      for (Handler<AsyncResult<Channel>> handler : handlers) {
+        handler.handle(res);
       }
+      future = cf;
+      result = res;
+    } else {
+      throw new IllegalStateException("Already complete ...");
+    }
   }
 
   private static void checkPort(int port) {
-    if(port < 0 || port > 65535) {
+    if (port < 0 || port > 65535) {
       throw new IllegalArgumentException("Invalid port " + port);
     }
   }
 
   static AsyncResolveConnectHelper doBind(VertxInternal vertx,
       SocketAddress socketAddress, ServerBootstrap bootstrap) {
-      AsyncResolveConnectHelper asyncResolveConnectHelper = new AsyncResolveConnectHelper();
-      bootstrap.channel(vertx.transport().serverChannelType(socketAddress.path() != null));
-      if(socketAddress.path() != null) {
-        java.net.SocketAddress converted = vertx.transport().convert(socketAddress, true);
-        ChannelFuture future = bootstrap.bind(converted);
-        future.addListener(f -> {
-          if(f.isSuccess()) {
-            asyncResolveConnectHelper.handle(future, Future.succeededFuture());
-          } else {
-            asyncResolveConnectHelper.handle(future,Future.failedFuture(f.cause()));
-          }
-        });
-      } else {
-        checkPort(socketAddress.port());
-        vertx.resolveAddress(socketAddress.host(), res -> {
-          if(res.succeeded()) {
-            InetSocketAddress t = new InetSocketAddress(socketAddress.port());
-            ChannelFuture future = bootstrap.bind(t);
-            future.addListener(f -> {
-              if(f.isSuccess()) {
-                asyncResolveConnectHelper.handle(future,
-                    Future.succeededFuture(future.channel()));
-              } else {
-                asyncResolveConnectHelper.handle(future, Future.failedFuture(f.cause()));
-              }
-            });
-          } else {
-            asyncResolveConnectHelper.handle(null, Future.failedFuture(res.cause()));
-          }
-        });
-      }
-      return asyncResolveConnectHelper;
+    AsyncResolveConnectHelper asyncResolveConnectHelper = new AsyncResolveConnectHelper();
+    bootstrap.channel(
+        vertx.transport().serverChannelType(socketAddress.path() != null));
+    if (socketAddress.path() != null) {
+      java.net.SocketAddress converted = vertx.transport()
+          .convert(socketAddress, true);
+      ChannelFuture future = bootstrap.bind(converted);
+      future.addListener(f -> {
+        if (f.isSuccess()) {
+          asyncResolveConnectHelper.handle(future, Future.succeededFuture());
+        } else {
+          asyncResolveConnectHelper
+              .handle(future, Future.failedFuture(f.cause()));
+        }
+      });
+    } else {
+      checkPort(socketAddress.port());
+      vertx.resolveAddress(socketAddress.host(), res -> {
+        if (res.succeeded()) {
+          InetSocketAddress t = new InetSocketAddress(socketAddress.port());
+          ChannelFuture future = bootstrap.bind(t);
+          future.addListener(f -> {
+            if (f.isSuccess()) {
+              asyncResolveConnectHelper.handle(future,
+                  Future.succeededFuture(future.channel()));
+            } else {
+              asyncResolveConnectHelper
+                  .handle(future, Future.failedFuture(f.cause()));
+            }
+          });
+        } else {
+          asyncResolveConnectHelper
+              .handle(null, Future.failedFuture(res.cause()));
+        }
+      });
+    }
+    return asyncResolveConnectHelper;
   }
 }

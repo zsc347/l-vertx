@@ -10,7 +10,7 @@ import org.junit.Test;
 public class NetServerTest {
 
   @Test
-  public void test() throws InterruptedException {
+  public void testEchoServer() throws InterruptedException {
     Vertx vertx = new VertxImpl();
     NetServer server = vertx.createNetServer();
     CountDownLatch latch = new CountDownLatch(2);
@@ -18,6 +18,7 @@ public class NetServerTest {
       socket.handler(buffer -> {
         System.out.println("Server receive " + buffer.length() + " : "
             + buffer.toString(StandardCharsets.UTF_8));
+        socket.write(buffer.toString());
       });
     });
     server.listen(res -> {
