@@ -68,6 +68,8 @@ class AsyncResolveConnectHelper {
       });
     } else {
       checkPort(socketAddress.port());
+      // why need to resolve the host ?
+      // finally we only used the port for listen
       vertx.resolveAddress(socketAddress.host(), res -> {
         if (res.succeeded()) {
           InetSocketAddress t = new InetSocketAddress(socketAddress.port());
