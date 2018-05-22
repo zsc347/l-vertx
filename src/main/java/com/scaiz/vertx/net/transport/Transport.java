@@ -1,6 +1,8 @@
 package com.scaiz.vertx.net.transport;
 
+import com.scaiz.vertx.net.NetClientOptions;
 import com.scaiz.vertx.net.NetServerOptions;
+import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ServerChannel;
@@ -70,5 +72,9 @@ public class Transport {
 
   public void configure(NetServerOptions options, ServerBootstrap bootstrap) {
     // configure ServerBootstrap options, just skip it now
+  }
+
+  public void configure(NetClientOptions options, Bootstrap bootstrap) {
+    // configure Client options, just skip it now
   }
 }

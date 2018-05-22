@@ -9,4 +9,8 @@ public class NetClientOptions {
   public int getIdleTimeout() {
     return 5000;
   }
+
+  public int getReconnectAttempts() {
+    return 3;
+  }
 }

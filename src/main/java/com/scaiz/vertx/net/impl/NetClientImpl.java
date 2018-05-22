@@ -11,6 +11,7 @@ import com.scaiz.vertx.net.NetClient;
 import com.scaiz.vertx.net.NetClientOptions;
 import com.scaiz.vertx.net.NetSocket;
 import com.scaiz.vertx.net.SocketAddress;
+import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.timeout.IdleStateHandler;
 
@@ -21,6 +22,7 @@ public class NetClientImpl implements NetClient {
   private final Closeable closeHook;
   private final ContextImpl creatingContext;
   private final int idleTimeout;
+  private boolean closed;
 
   public NetClientImpl(VertxInternal vertx, NetClientOptions options,
       boolean usingCreatingContext) {
@@ -45,22 +47,52 @@ public class NetClientImpl implements NetClient {
     idleTimeout = options.getIdleTimeout();
   }
 
+  private void checkClosed() {
+    if (closed) {
+      throw new IllegalStateException("Client is closed");
+    }
+  }
+
   protected void initChannel(ChannelPipeline pipeline) {
     if (idleTimeout > 0) {
       pipeline.addLast("idle", new IdleStateHandler(0, 0, idleTimeout));
     }
   }
 
-  @Override
-  public NetClient connect(int port, String host,
+  private void doConnect(SocketAddress remoteAddress, String serverName,
       Handler<AsyncResult<NetSocket>> connectHandler) {
-    return null;
+    doConnect(remoteAddress, serverName, connectHandler,
+        options.getReconnectAttempts());
+  }
+
+  private void doConnect(SocketAddress remoteAddress, String serverName,
+      Handler<AsyncResult<NetSocket>> connectHandler, int remainingAttempts) {
+    checkClosed();
+    if (connectHandler == null) {
+      throw new IllegalArgumentException("connect handler must not null");
+    }
+    ContextImpl context = vertx.getOrCreateContext();
+    Bootstrap bootstrap = new Bootstrap();
+    bootstrap.group(context.nettyEventLoop());
+    bootstrap.channel(vertx.transport().channelType(
+        remoteAddress.path() != null));
+
+    applyConnectionOptions(bootstrap);
+
+
+
+
+  }
+
+  private void applyConnectionOptions(Bootstrap bootstrap) {
+    vertx.transport().configure(options, bootstrap);
   }
 
   @Override
   public NetClient connect(int port, String host, String serverName,
       Handler<AsyncResult<NetSocket>> connectHandler) {
-    return null;
+
+    return this;
   }
 
   @Override

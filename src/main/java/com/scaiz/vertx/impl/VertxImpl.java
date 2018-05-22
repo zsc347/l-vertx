@@ -24,6 +24,7 @@ import com.scaiz.vertx.net.impl.ServerID;
 import com.scaiz.vertx.net.transport.Transport;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.resolver.AddressResolverGroup;
 import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
@@ -120,6 +121,11 @@ public class VertxImpl implements VertxInternal {
   public void resolveAddress(String hostname,
       Handler<AsyncResult<InetAddress>> resultHandler) {
     this.addressResolver.resolveHostName(hostname, resultHandler);
+  }
+
+  @Override
+  public AddressResolverGroup<?> nettyAddressResolverGroup() {
+    return addressResolver.nettyAddressResolverGroup();
   }
 
   private void createAndStartEventBus(VertxOptions options,

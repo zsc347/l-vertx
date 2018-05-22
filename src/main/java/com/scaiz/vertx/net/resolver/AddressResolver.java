@@ -39,4 +39,8 @@ public class AddressResolver {
       }
     });
   }
+
+  public AddressResolverGroup<InetSocketAddress> nettyAddressResolverGroup() {
+    return resolverGroup;
+  }
 }

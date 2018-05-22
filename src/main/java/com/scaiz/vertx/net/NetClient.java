@@ -5,8 +5,10 @@ import com.scaiz.vertx.async.Handler;
 
 public interface NetClient {
 
-  NetClient connect(int port, String host,
-      Handler<AsyncResult<NetSocket>> connectHandler);
+  default NetClient connect(int port, String host,
+      Handler<AsyncResult<NetSocket>> connectHandler) {
+    return connect(port, host, null, connectHandler);
+  }
 
   NetClient connect(int port, String host, String serverName,
       Handler<AsyncResult<NetSocket>> connectHandler);
