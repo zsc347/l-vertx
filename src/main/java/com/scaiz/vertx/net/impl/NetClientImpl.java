@@ -12,8 +12,12 @@ import com.scaiz.vertx.net.NetClientOptions;
 import com.scaiz.vertx.net.NetSocket;
 import com.scaiz.vertx.net.SocketAddress;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.timeout.IdleStateHandler;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class NetClientImpl implements NetClient {
 
@@ -23,6 +27,9 @@ public class NetClientImpl implements NetClient {
   private final ContextImpl creatingContext;
   private final int idleTimeout;
   private boolean closed;
+  private final Map<Channel, NetSocketImpl> socketMap =
+      new ConcurrentHashMap<>();
+
 
   public NetClientImpl(VertxInternal vertx, NetClientOptions options,
       boolean usingCreatingContext) {
@@ -79,9 +86,71 @@ public class NetClientImpl implements NetClient {
 
     applyConnectionOptions(bootstrap);
 
+    ChannelProvider channelProvider;
+
+    if (options.getProxyOption() != null) {
+      channelProvider = ProxyChannelProvider.INSTANCE;
+    } else {
+      channelProvider = ChannelProvider.INSTANCE;
+    }
+
+    Handler<Channel> channelInitializer = ch -> {
+
+    };
+    Handler<AsyncResult<Channel>> channelHandler = res -> {
+      if (res.succeeded()) {
+        Channel channel = res.result();
+        connected(context, channel, connectHandler);
+      } else {
+        if (remainingAttempts > 0 || remainingAttempts == -1) {
+          context.executeFromIO(() -> System.err.println(
+              "Failed to create connection. Will retry in " +
+                  options.getReconnectInterval() + " milliseconds"));
+        } else {
+          failed(context, null, res.cause(), connectHandler);
+        }
+      }
+    };
+    channelProvider.connect(vertx, bootstrap, options.getProxyOption(),
+        remoteAddress, channelInitializer, channelHandler);
+  }
 
 
+  private void connected(ContextImpl context,
+      Channel ch,
+      Handler<AsyncResult<NetSocket>> connectHandler) {
 
+    ContextImpl.setCurrentThreadContext(context);
+    initChannel(ch.pipeline());
+
+    VertxNetHandler handler = new VertxNetHandler(
+        ctx -> new NetSocketImpl(vertx, ctx, context)) {
+      @Override
+      protected void handleMessage(NetSocketImpl sock, ContextImpl context,
+          ChannelHandlerContext chctx, Object message) {
+        sock.handleMessageReceived(message);
+      }
+    };
+
+    handler.setAddHandler(socket -> {
+      socketMap.put(ch, socket);
+      context.executeFromIO(
+          () -> connectHandler.handle(Future.succeededFuture(socket)));
+    });
+
+    handler.setRemoveHandler(socketMap::remove);
+
+    ch.pipeline().addLast("handler", handler);
+  }
+
+
+  private void failed(ContextImpl context, Channel ch, Throwable throwable,
+      Handler<AsyncResult<NetSocket>> connectHandler) {
+    if (ch != null) {
+      ch.close();
+    }
+    context.executeFromIO(
+        () -> connectHandler.handle(Future.failedFuture(throwable)));
   }
 
   private void applyConnectionOptions(Bootstrap bootstrap) {
@@ -91,20 +160,19 @@ public class NetClientImpl implements NetClient {
   @Override
   public NetClient connect(int port, String host, String serverName,
       Handler<AsyncResult<NetSocket>> connectHandler) {
-
+    if (connectHandler == null) {
+      throw new IllegalArgumentException("must  set connectHandler");
+    }
+    doConnect(SocketAddress.inetSocketAddress(port, host), serverName,
+        ar -> connectHandler.handle(ar.map(s -> (NetSocket) s)));
     return this;
-  }
-
-  @Override
-  public NetClient connect(SocketAddress remoteAddress,
-      Handler<AsyncResult<NetSocket>> connectHandler) {
-    return null;
   }
 
   @Override
   public NetClient connect(SocketAddress remoteAddress, String serverName,
       Handler<AsyncResult<NetSocket>> connectHandler) {
-    return null;
+    doConnect(remoteAddress, serverName, connectHandler);
+    return this;
   }
 
   @Override

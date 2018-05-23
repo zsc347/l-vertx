@@ -13,8 +13,10 @@ public interface NetClient {
   NetClient connect(int port, String host, String serverName,
       Handler<AsyncResult<NetSocket>> connectHandler);
 
-  NetClient connect(SocketAddress remoteAddress,
-      Handler<AsyncResult<NetSocket>> connectHandler);
+  default NetClient connect(SocketAddress remoteAddress,
+      Handler<AsyncResult<NetSocket>> connectHandler) {
+    return connect(remoteAddress, null, connectHandler);
+  }
 
   NetClient connect(SocketAddress remoteAddress, String serverName,
       Handler<AsyncResult<NetSocket>> connectHandler);

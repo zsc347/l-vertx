@@ -9,10 +9,12 @@ import com.scaiz.vertx.net.SocketAddress;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.proxy.HttpProxyHandler;
+import io.netty.handler.proxy.ProxyConnectionEvent;
 import io.netty.handler.proxy.ProxyHandler;
 import io.netty.handler.proxy.Socks4ProxyHandler;
 import io.netty.handler.proxy.Socks5ProxyHandler;
@@ -78,24 +80,36 @@ public class ProxyChannelProvider extends ChannelProvider {
           protected void initChannel(Channel ch) throws Exception {
             ChannelPipeline pipeline = ch.pipeline();
             pipeline.addFirst("proxy", proxy);
-            pipeline.addLast(new ChannelInboundHandlerAdapter() {
-              
-            });
 
-            channelInitializer.handle(ch);
+            pipeline.addLast(new ChannelInboundHandlerAdapter() {
+
+              @Override
+              public void userEventTriggered(ChannelHandlerContext chctx,
+                  Object evt) throws Exception {
+                if (evt instanceof ProxyConnectionEvent) {
+                  pipeline.remove(proxy);
+                  pipeline.remove(this);
+                  channelInitializer.handle(ch);
+                  channelHandler.handle(Future.succeededFuture(ch));
+                }
+                chctx.fireUserEventTriggered(evt);
+              }
+
+              @Override
+              public void exceptionCaught(ChannelHandlerContext chctx,
+                  Throwable cause) throws Exception {
+                channelHandler.handle(Future.failedFuture(cause));
+              }
+            });
           }
         });
 
-        ChannelFuture fut = bootstrap.connect(vertx.transport()
-            .convert(remoteAddress, false));
+        ChannelFuture fut = bootstrap.connect(targetAddress);
         fut.addListener(res -> {
-          if (res.isSuccess()) {
-            channelHandler.handle(Future.succeededFuture(fut.channel()));
-          } else {
+          if (!res.isSuccess()) {
             channelHandler.handle(Future.failedFuture(fut.cause()));
           }
         });
-
       } else {
         channelHandler.handle(Future.failedFuture(dnsRes.cause()));
       }

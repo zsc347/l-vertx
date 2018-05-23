@@ -13,4 +13,12 @@ public class NetClientOptions {
   public int getReconnectAttempts() {
     return 3;
   }
+
+  public ProxyOptions getProxyOption() {
+    return null;
+  }
+
+  public int getReconnectInterval() {
+    return 2000;
+  }
 }
