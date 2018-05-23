@@ -30,6 +30,9 @@ public class NetClientImpl implements NetClient {
   private final Map<Channel, NetSocketImpl> socketMap =
       new ConcurrentHashMap<>();
 
+  public NetClientImpl(VertxInternal vertx, NetClientOptions options) {
+    this(vertx, options, true);
+  }
 
   public NetClientImpl(VertxInternal vertx, NetClientOptions options,
       boolean usingCreatingContext) {
@@ -164,7 +167,7 @@ public class NetClientImpl implements NetClient {
       throw new IllegalArgumentException("must  set connectHandler");
     }
     doConnect(SocketAddress.inetSocketAddress(port, host), serverName,
-        ar -> connectHandler.handle(ar.map(s -> (NetSocket) s)));
+        ar -> connectHandler.handle(ar.map(s -> s)));
     return this;
   }
 
@@ -177,7 +180,15 @@ public class NetClientImpl implements NetClient {
 
   @Override
   public void close() {
-
+    if (!closed) {
+      for (NetSocketImpl sock : socketMap.values()) {
+        sock.close();
+      }
+      if (creatingContext != null) {
+        creatingContext.removeCloseHook(closeHook);
+      }
+      closed = true;
+    }
   }
 
   @Override

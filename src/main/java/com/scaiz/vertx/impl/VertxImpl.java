@@ -16,8 +16,11 @@ import com.scaiz.vertx.container.impl.WorkerContext;
 import com.scaiz.vertx.container.impl.WorkerPool;
 import com.scaiz.vertx.eventbus.EventBus;
 import com.scaiz.vertx.eventbus.impl.EventBusImpl;
+import com.scaiz.vertx.net.NetClient;
+import com.scaiz.vertx.net.NetClientOptions;
 import com.scaiz.vertx.net.NetServer;
 import com.scaiz.vertx.net.NetServerOptions;
+import com.scaiz.vertx.net.impl.NetClientImpl;
 import com.scaiz.vertx.net.resolver.AddressResolver;
 import com.scaiz.vertx.net.impl.NetServerImpl;
 import com.scaiz.vertx.net.impl.ServerID;
@@ -70,10 +73,8 @@ public class VertxImpl implements VertxInternal {
     ThreadFactory eventLoopThreadFactory = new VertxThreadFactory(
         "vert.x-eventloop-thread-",
         checker, false, options.getMaxEventLoopExecuteTime());
-    NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup(
-        options.getEventLoopPoolSize(), eventLoopThreadFactory);
-    eventLoopGroup.setIoRatio(50);
-    this.eventLoopGroup = eventLoopGroup;
+    eventLoopGroup = transport.eventLoopGroup(options.getEventLoopPoolSize(),
+        eventLoopThreadFactory, 50);
 
     ExecutorService workerExec = Executors
         .newFixedThreadPool(options.getWorkerPoolSize(),
@@ -165,6 +166,11 @@ public class VertxImpl implements VertxInternal {
   @Override
   public NetServer createNetServer(NetServerOptions options) {
     return new NetServerImpl(this, options);
+  }
+
+  @Override
+  public NetClient createNetClient(NetClientOptions options) {
+    return new NetClientImpl(this, options);
   }
 
   @Override

@@ -1,15 +1,19 @@
 package com.scaiz.vertx.net.transport;
 
 import io.netty.channel.Channel;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.ServerChannel;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollDomainSocketChannel;
+import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerDomainSocketChannel;
 import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.epoll.EpollSocketChannel;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.unix.DomainSocketAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.concurrent.ThreadFactory;
 
 public class EpollTransport extends Transport {
 
@@ -30,6 +34,14 @@ public class EpollTransport extends Transport {
             .createUnresolved(address.host(), address.port());
       }
     }
+  }
+
+  public EventLoopGroup eventLoopGroup(int nThreads,
+      ThreadFactory threadFactory, int ioRatio) {
+    EpollEventLoopGroup epollEventLoopGroup = new EpollEventLoopGroup(nThreads,
+        threadFactory);
+    epollEventLoopGroup.setIoRatio(ioRatio);
+    return epollEventLoopGroup;
   }
 
   @Override

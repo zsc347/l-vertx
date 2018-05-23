@@ -4,6 +4,8 @@ import com.scaiz.vertx.async.Handler;
 import com.scaiz.vertx.container.Context;
 import com.scaiz.vertx.container.VertxThread;
 import com.scaiz.vertx.eventbus.EventBus;
+import com.scaiz.vertx.net.NetClient;
+import com.scaiz.vertx.net.NetClientOptions;
 import com.scaiz.vertx.net.NetServer;
 import com.scaiz.vertx.net.NetServerOptions;
 
@@ -31,5 +33,11 @@ public interface Vertx {
 
   default NetServer createNetServer() {
     return createNetServer(new NetServerOptions());
+  }
+
+  NetClient createNetClient(NetClientOptions options);
+
+  default NetClient createNetClient() {
+    return createNetClient(new NetClientOptions());
   }
 }

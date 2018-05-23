@@ -5,11 +5,14 @@ import com.scaiz.vertx.net.NetServerOptions;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.ServerChannel;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.concurrent.ThreadFactory;
 
 public class Transport {
 
@@ -49,7 +52,7 @@ public class Transport {
   }
 
   public Class<? extends ServerChannel> serverChannelType(boolean domain) {
-    if(domain) {
+    if (domain) {
       throw new IllegalArgumentException();
     }
     return NioServerSocketChannel.class;
@@ -68,6 +71,14 @@ public class Transport {
             .createUnresolved(address.host(), address.port());
       }
     }
+  }
+
+  public EventLoopGroup eventLoopGroup(int nThreads,
+      ThreadFactory threadFactory, int ioRatio) {
+    NioEventLoopGroup nioEventLoopGroup = new NioEventLoopGroup(nThreads,
+        threadFactory);
+    nioEventLoopGroup.setIoRatio(ioRatio);
+    return nioEventLoopGroup;
   }
 
   public void configure(NetServerOptions options, ServerBootstrap bootstrap) {

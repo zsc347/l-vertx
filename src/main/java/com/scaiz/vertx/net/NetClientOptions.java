@@ -2,6 +2,10 @@ package com.scaiz.vertx.net;
 
 public class NetClientOptions {
 
+  public NetClientOptions() {
+
+  }
+
   public NetClientOptions(NetClientOptions options) {
 
   }
@@ -19,6 +23,6 @@ public class NetClientOptions {
   }
 
   public int getReconnectInterval() {
-    return 2000;
+    return 2;
   }
 }
