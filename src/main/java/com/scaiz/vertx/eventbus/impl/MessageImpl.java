@@ -14,19 +14,19 @@ public class MessageImpl<U, V> implements Message<V> {
 
   private EventBusImpl bus;
 
-  private MessageCodec<U, V> messageCodec;
+  protected MessageCodec<U, V> messageCodec;
 
   private String address;
-  private String replyAddress;
+  protected String replyAddress;
 
 
-  private MultiMap headers;
-  private U sendBody;
-  private V receiveBody;
+  protected MultiMap headers;
+  protected U sendBody;
+  protected V receiveBody;
 
   private boolean isSend;
 
-  MessageImpl(String address, String replyAddress,
+  protected MessageImpl(String address, String replyAddress,
       MultiMap headers, U sendBody, MessageCodec codec, boolean isSend,
       EventBusImpl eventBus) {
     this.address = address;
@@ -38,7 +38,7 @@ public class MessageImpl<U, V> implements Message<V> {
     this.bus = eventBus;
   }
 
-  private MessageImpl(MessageImpl<U, V> other) {
+  protected MessageImpl(MessageImpl<U, V> other) {
     this.bus = other.bus;
     this.address = other.address;
     this.replyAddress = other.replyAddress;
