@@ -24,4 +24,9 @@ public class IntCodec implements MessageCodec<Integer, Integer> {
   public String name() {
     return "int";
   }
+
+  @Override
+  public byte systemCodecID() {
+    return 1;
+  }
 }

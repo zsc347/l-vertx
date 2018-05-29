@@ -1,4 +1,4 @@
-package com.scaiz.vertx.eventbus.clustered;
+package com.scaiz.vertx.eventbus.impl.clustered;
 
 import com.scaiz.vertx.net.impl.ServerID;
 import java.util.Objects;

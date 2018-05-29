@@ -54,4 +54,8 @@ public class CodecManager {
   public void unregisterCodec(String codecName) {
     userCodecMap.remove(codecName);
   }
+
+  public <V, U> MessageCodec<U, V> getCodec(String codecName) {
+    return userCodecMap.get(codecName);
+  }
 }

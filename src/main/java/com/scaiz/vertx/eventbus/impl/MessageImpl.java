@@ -16,7 +16,7 @@ public class MessageImpl<U, V> implements Message<V> {
 
   protected MessageCodec<U, V> messageCodec;
 
-  private String address;
+  protected String address;
   protected String replyAddress;
 
 
@@ -24,17 +24,17 @@ public class MessageImpl<U, V> implements Message<V> {
   protected U sendBody;
   protected V receiveBody;
 
-  private boolean isSend;
+  protected boolean send;
 
   protected MessageImpl(String address, String replyAddress,
-      MultiMap headers, U sendBody, MessageCodec codec, boolean isSend,
+      MultiMap headers, U sendBody, MessageCodec codec, boolean send,
       EventBusImpl eventBus) {
     this.address = address;
     this.replyAddress = replyAddress;
     this.headers = headers;
     this.sendBody = sendBody;
     this.messageCodec = codec;
-    this.isSend = isSend;
+    this.send = send;
     this.bus = eventBus;
   }
 
@@ -54,7 +54,7 @@ public class MessageImpl<U, V> implements Message<V> {
       this.receiveBody = messageCodec.transform(other.sendBody);
     }
 
-    this.isSend = other.isSend;
+    this.send = other.send;
   }
 
   U sendBody() {
@@ -89,7 +89,7 @@ public class MessageImpl<U, V> implements Message<V> {
 
   @Override
   public boolean isSend() {
-    return isSend;
+    return send;
   }
 
   @Override

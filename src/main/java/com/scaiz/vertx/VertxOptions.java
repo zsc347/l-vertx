@@ -1,5 +1,6 @@
 package com.scaiz.vertx;
 
+import com.scaiz.vertx.eventbus.EventBusOptions;
 import com.scaiz.vertx.net.resolver.AddressResolverOptions;
 
 public class VertxOptions {
@@ -31,5 +32,9 @@ public class VertxOptions {
 
   public AddressResolverOptions getAddressResolverOptions() {
     return new AddressResolverOptions();
+  }
+
+  public EventBusOptions getEventBusOptions() {
+    return new EventBusOptions();
   }
 }

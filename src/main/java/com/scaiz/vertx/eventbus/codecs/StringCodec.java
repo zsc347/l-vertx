@@ -30,4 +30,9 @@ public class StringCodec implements MessageCodec<String, String> {
   public String name() {
     return "string";
   }
+
+  @Override
+  public byte systemCodecID() {
+    return 0;
+  }
 }

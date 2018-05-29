@@ -15,4 +15,6 @@ public interface MessageCodec<S, R> {
   R transform(S s);
 
   String name();
+
+  byte systemCodecID();
 }

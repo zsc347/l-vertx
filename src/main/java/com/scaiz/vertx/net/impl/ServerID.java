@@ -35,4 +35,12 @@ public class ServerID {
   public String toString() {
     return host + ":" + port;
   }
+
+  public int getPort() {
+    return port;
+  }
+
+  public String getHost() {
+    return host;
+  }
 }

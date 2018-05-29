@@ -1,7 +1,8 @@
-package com.scaiz.vertx.eventbus.clustered;
+package com.scaiz.vertx.eventbus.impl.clustered;
 
 import com.scaiz.vertx.buffer.Buffer;
 import com.scaiz.vertx.eventbus.MessageCodec;
+import com.scaiz.vertx.eventbus.impl.CodecManager;
 import com.scaiz.vertx.eventbus.impl.EventBusImpl;
 import com.scaiz.vertx.eventbus.impl.MessageImpl;
 import com.scaiz.vertx.net.impl.ServerID;
@@ -13,6 +14,7 @@ import java.util.Map.Entry;
 
 public class ClusteredMessage<U, V> extends MessageImpl<U, V> {
 
+  private static final byte WIRE_PROTOCOL_VERSION = 1;
   private ServerID sender;
   private Buffer wireBuffer;
   private int bodyPos;
@@ -69,6 +71,99 @@ public class ClusteredMessage<U, V> extends MessageImpl<U, V> {
     buffer.appendBytes(bytes);
   }
 
+
+  public Buffer encodeToWire() {
+    int length = 1024;
+    Buffer buffer = Buffer.buffer(length);
+    buffer.appendInt(0); // place holder for overall length
+
+    buffer.appendByte(WIRE_PROTOCOL_VERSION);
+    byte systemCodecID = messageCodec.systemCodecID();
+    buffer.appendByte(systemCodecID);
+    if (systemCodecID == -1) {
+      writeString(buffer, messageCodec.name());
+    }
+
+    buffer.appendByte(send ? (byte) 0 : (byte) 1);
+
+    writeString(buffer, address);
+
+    if (replyAddress != null) {
+      writeString(buffer, replyAddress);
+    } else {
+      buffer.appendInt(0);
+    }
+
+    buffer.appendInt(sender.getPort());
+
+    writeString(buffer, sender.getHost());
+    encodeHeaders(buffer);
+    encodeBody(buffer);
+    buffer.setInt(0, buffer.length() - 4);
+    return buffer;
+  }
+
+  @SuppressWarnings("unchecked")
+  public void readFromWire(Buffer buffer, CodecManager codecManager) {
+    // overall length already read when passed here
+    int pos = 0;
+    byte protocolVersion = buffer.getByte(pos);
+    if (protocolVersion > WIRE_PROTOCOL_VERSION) {
+      throw new IllegalStateException(
+          "version must <= " + WIRE_PROTOCOL_VERSION);
+    }
+    pos++;
+    byte systemCodecID = buffer.getByte(pos);
+    pos++;
+    if (systemCodecID != -1) {
+      messageCodec = codecManager.getSystemCodes()[systemCodecID];
+    } else {
+      int length = buffer.getInt(pos);
+      pos += 4;
+      byte[] bytes = buffer.getBytes(pos, pos + length);
+      String codecName = new String(bytes, CharsetUtil.UTF_8);
+      messageCodec = codecManager.getCodec(codecName);
+      if (messageCodec == null) {
+        throw new IllegalStateException(
+            "No message codec registered with name " + codecName);
+      }
+      pos += length;
+    }
+    byte sendByte = buffer.getByte(pos);
+    pos++;
+    send = sendByte == 0;
+
+    int length = buffer.getInt(pos);
+    pos += 4;
+    byte[] bytes = buffer.getBytes(pos, pos + length);
+    address = new String(bytes, CharsetUtil.UTF_8);
+    pos += length;
+
+    length = buffer.getInt(pos);
+    pos += 4;
+    if (length > 0) {
+      bytes = buffer.getBytes(pos, pos + length);
+      replyAddress = new String(bytes, CharsetUtil.UTF_8);
+      pos += length;
+    }
+    int sendPort = buffer.getInt(pos);
+    pos += 4;
+
+    length = buffer.getInt(pos);
+    pos += 4;
+    bytes = buffer.getBytes(pos, pos + length);
+    String sendHost = new String(bytes, CharsetUtil.UTF_8);
+    pos += length;
+
+    headerPos = pos;
+    int headerLength = buffer.getInt(pos);
+    pos += headerLength;
+    bodyPos = pos;
+    sender = new ServerID(sendPort, sendHost);
+    wireBuffer = buffer;
+    fromWire = true;
+  }
+
   private void encodeHeaders(Buffer buffer) {
     if (headers != null && !headers.isEmpty()) {
       int headerStartPos = buffer.length();
@@ -120,6 +215,9 @@ public class ClusteredMessage<U, V> extends MessageImpl<U, V> {
     bodyPos = 0;
   }
 
+  ServerID sender() {
+    return sender;
+  }
 
   @Override
   public String replyAddress() {
