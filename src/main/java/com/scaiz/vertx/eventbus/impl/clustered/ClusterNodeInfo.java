@@ -3,16 +3,16 @@ package com.scaiz.vertx.eventbus.impl.clustered;
 import com.scaiz.vertx.net.impl.ServerID;
 import java.util.Objects;
 
-public class ClusteredNodeInfo {
+public class ClusterNodeInfo {
 
   private String nodeId;
   private ServerID serverID;
 
-  public ClusteredNodeInfo() {
+  public ClusterNodeInfo() {
 
   }
 
-  public ClusteredNodeInfo(String nodeId, ServerID serverID) {
+  public ClusterNodeInfo(String nodeId, ServerID serverID) {
     this.nodeId = nodeId;
     this.serverID = serverID;
   }
@@ -33,7 +33,7 @@ public class ClusteredNodeInfo {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ClusteredNodeInfo that = (ClusteredNodeInfo) o;
+    ClusterNodeInfo that = (ClusterNodeInfo) o;
     return Objects.equals(this.nodeId, that.nodeId)
         && Objects.equals(this.serverID, that.serverID);
   }

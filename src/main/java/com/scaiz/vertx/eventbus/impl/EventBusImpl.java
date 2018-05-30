@@ -37,7 +37,7 @@ public class EventBusImpl implements EventBus {
       new CopyOnWriteArrayList<>();
   private final CodecManager codecManager = new CodecManager();
 
-  private final VertxInternal vertx;
+  protected final VertxInternal vertx;
 
   private boolean started;
 
