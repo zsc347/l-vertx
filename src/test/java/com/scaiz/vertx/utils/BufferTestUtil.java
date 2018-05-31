@@ -34,6 +34,24 @@ public class BufferTestUtil {
     return Buffer.buffer(randomByteArray(length));
   }
 
+  public static byte[] randomByteArray(int length, boolean avoid, byte avoidByte) {
+    byte[] line = new byte[length];
+    for (int i = 0; i < length; i++) {
+      byte rand;
+      do {
+        rand = randomByte();
+      } while (avoid && rand == avoidByte);
+
+      line[i] = rand;
+    }
+    return line;
+  }
+
+  public static Buffer randomBuffer(int length, boolean avoid, byte avoidByte) {
+    byte[] line = randomByteArray(length, avoid, avoidByte);
+    return Buffer.buffer(line);
+  }
+
   public static String randomAlphaString(int length) {
     StringBuilder builder = new StringBuilder(length);
     for (int i = 0; i < length; i++) {
