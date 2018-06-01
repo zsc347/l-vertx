@@ -1,8 +1,6 @@
 package com.scaiz.vertx.support;
 
-import java.util.Iterator;
-
-public interface ChoosableIterable<T> extends Iterator<T> {
+public interface ChoosableIterable<T> extends Iterable<T> {
 
   boolean isEmpty();
 

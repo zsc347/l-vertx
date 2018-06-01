@@ -8,5 +8,7 @@ public interface ClusterManager {
 
   <K, V> void getAsyncMultiMap(String name,
       Handler<AsyncResult<AsyncMultiMap<K, V>>> resultHandler);
+
+  String getNodeID();
 }
 

@@ -39,7 +39,7 @@ public class EventBusImpl implements EventBus {
 
   protected final VertxInternal vertx;
 
-  private boolean started;
+  protected boolean started;
 
   public EventBusImpl(VertxInternal vertx) {
     this.vertx = vertx;
@@ -320,6 +320,10 @@ public class EventBusImpl implements EventBus {
     }
   }
 
+  protected boolean isMessageLocal(MessageImpl msg) {
+    return true;
+  }
+
   private void assertStarted() {
     if (!started) {
       throw new IllegalStateException("Event Bus is not started");
@@ -336,11 +340,11 @@ public class EventBusImpl implements EventBus {
     return msg;
   }
 
-  private <T> void sendOrPub(SendContextImpl<T> sendContext) {
+  protected  <T> void sendOrPub(SendContextImpl<T> sendContext) {
     deliverMessageLocally(sendContext);
   }
 
-  private <T> void deliverMessageLocally(SendContextImpl<T> sendContext) {
+  protected  <T> void deliverMessageLocally(SendContextImpl<T> sendContext) {
     if (!deliverMessageLocally(sendContext.message)) {
       if (sendContext.handlerRegistration != null) {
         sendContext.handlerRegistration.sendAsyncResultFailure(
@@ -388,7 +392,7 @@ public class EventBusImpl implements EventBus {
   }
 
 
-  class SendContextImpl<T> implements SendContext<T> {
+  protected class SendContextImpl<T> implements SendContext<T> {
 
     private final MessageImpl message;
     final DeliveryOptions options;
