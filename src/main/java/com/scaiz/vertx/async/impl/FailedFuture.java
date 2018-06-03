@@ -14,6 +14,8 @@ public class FailedFuture<T> implements Future<T> {
         .orElse(new NoStackTraceThrowable(null));
   }
 
+
+
   @Override
   public boolean isComplete() {
     return true;

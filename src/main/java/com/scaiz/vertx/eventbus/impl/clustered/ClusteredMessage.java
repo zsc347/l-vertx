@@ -8,6 +8,7 @@ import com.scaiz.vertx.eventbus.impl.MessageImpl;
 import com.scaiz.vertx.net.impl.ServerID;
 import com.scaiz.vertx.support.CaseInsensitiveHeaders;
 import com.scaiz.vertx.support.MultiMap;
+import com.sun.security.ntlm.Server;
 import io.netty.util.CharsetUtil;
 import java.util.List;
 import java.util.Map.Entry;
@@ -21,11 +22,16 @@ public class ClusteredMessage<U, V> extends MessageImpl<U, V> {
   private int headerPos;
   private boolean fromWire;
 
-  ClusteredMessage(String address, String replyAddress,
+  public ClusteredMessage() {
+
+  }
+
+  ClusteredMessage(ServerID sender, String address, String replyAddress,
       MultiMap headers, U sendBody,
       MessageCodec codec, boolean isSend,
       EventBusImpl eventBus) {
     super(address, replyAddress, headers, sendBody, codec, isSend, eventBus);
+    this.sender = sender;
   }
 
   protected ClusteredMessage(ClusteredMessage<U, V> other) {
@@ -215,7 +221,7 @@ public class ClusteredMessage<U, V> extends MessageImpl<U, V> {
     bodyPos = 0;
   }
 
-  ServerID sender() {
+  public ServerID getSender() {
     return sender;
   }
 

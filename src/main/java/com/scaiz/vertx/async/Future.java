@@ -27,6 +27,10 @@ public interface Future<T> extends AsyncResult<T>, Handler<AsyncResult<T>> {
     return factory.failFuture(t);
   }
 
+  static <T> Future<T> failureFuture(String message) {
+    return factory.failureFuture(message);
+  }
+
   boolean isComplete();
 
   Future<T> setHandler(Handler<AsyncResult<T>> handler);

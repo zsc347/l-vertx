@@ -16,6 +16,9 @@ import com.scaiz.vertx.container.impl.WorkerContext;
 import com.scaiz.vertx.container.impl.WorkerPool;
 import com.scaiz.vertx.eventbus.EventBus;
 import com.scaiz.vertx.eventbus.impl.EventBusImpl;
+import com.scaiz.vertx.eventbus.impl.clustered.ClusterManager;
+import com.scaiz.vertx.eventbus.impl.clustered.ClusteredEventBus;
+import com.scaiz.vertx.eventbus.impl.clustered.HAManager;
 import com.scaiz.vertx.net.NetClient;
 import com.scaiz.vertx.net.NetClientOptions;
 import com.scaiz.vertx.net.NetServer;
@@ -49,6 +52,11 @@ public class VertxImpl implements VertxInternal {
   private final Map<ServerID, NetServerImpl> sharedNetServers = new HashMap<>();
 
   private final AddressResolver addressResolver;
+
+  private final ClusterManager clusterManager;
+
+  private final boolean haEnabled;
+  private HAManager haManager;
 
 
   public VertxImpl() {
@@ -90,7 +98,48 @@ public class VertxImpl implements VertxInternal {
     this.addressResolver = new AddressResolver(this,
         options.getAddressResolverOptions());
 
-    createAndStartEventBus(options, resultHandler);
+    this.haEnabled = options.isClustered() && options.isHAEnabled();
+
+    if (options.isClustered()) {
+      this.clusterManager = getClusterManager(options);
+      this.clusterManager.setVertx(this);
+      this.clusterManager.join(ar -> {
+        if (ar.failed()) {
+          System.err.println(
+              "Failed to join cluster " + ar.cause().getMessage());
+          ar.cause().printStackTrace();
+        } else {
+          synchronized (VertxImpl.this) {
+            haManager = new HAManager();
+            createAndStartEventBus(options, resultHandler);
+          }
+        }
+      });
+    } else {
+      this.clusterManager = null;
+      createAndStartEventBus(options, resultHandler);
+    }
+  }
+
+  private ClusterManager getClusterManager(VertxOptions options) {
+    if (options.isClustered()) {
+      if (options.getClusteredManger() != null) {
+
+      }
+      return null;
+    } else {
+      return null;
+    }
+  }
+
+  private HAManager haManager() {
+    if (haManager == null && haEnabled) {
+      synchronized (this) {
+        return haManager;
+      }
+    } else {
+      return haManager;
+    }
   }
 
   @Override
@@ -131,7 +180,13 @@ public class VertxImpl implements VertxInternal {
 
   private void createAndStartEventBus(VertxOptions options,
       Handler<AsyncResult<Vertx>> resultHandler) {
-    eventBus = new EventBusImpl(this);
+    if (options.isClustered()) {
+      eventBus = new ClusteredEventBus(this, options, clusterManager,
+          haManager);
+    } else {
+      eventBus = new EventBusImpl(this);
+    }
+
     eventBus.start(ar -> {
       if (ar.succeeded()) {
         if (resultHandler != null) {

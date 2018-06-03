@@ -35,7 +35,7 @@ public class EventBusImpl implements EventBus {
       new ConcurrentHashMap<>();
   private final List<Handler<SendContext>> interceptors =
       new CopyOnWriteArrayList<>();
-  private final CodecManager codecManager = new CodecManager();
+  protected final CodecManager codecManager = new CodecManager();
 
   protected final VertxInternal vertx;
 
@@ -110,17 +110,6 @@ public class EventBusImpl implements EventBus {
   }
 
   @Override
-  public <T> EventBus registerDefaultCodec(Class<T> clazz,
-      MessageCodec<T, ?> codec) {
-    return null;
-  }
-
-  @Override
-  public EventBus unregisterDefaultCodec(Class clazz) {
-    return null;
-  }
-
-  @Override
   public synchronized void start(Handler<AsyncResult<Void>> completionHandler) {
     if (started) {
       throw new IllegalStateException("Already started");
@@ -163,7 +152,19 @@ public class EventBusImpl implements EventBus {
   public <T> void removeRegistration(String address,
       HandlerRegistration<T> registration,
       Handler<AsyncResult<Void>> completionHandler) {
-    removeLocalRegistration(address, registration);
+    HandlerHolder holder = removeLocalRegistration(address, registration);
+    removeRegistration(holder, address, completionHandler);
+  }
+
+
+  protected <T> void removeRegistration(HandlerHolder handlerHolder,
+      String address,
+      Handler<AsyncResult<Void>> completionHandler) {
+    callCompletionHandlerAsync(completionHandler);
+  }
+
+  protected void callCompletionHandlerAsync(
+      Handler<AsyncResult<Void>> completionHandler) {
     if (completionHandler != null) {
       vertx.runOnContext(
           v -> completionHandler.handle(Future.succeededFuture()));
@@ -172,9 +173,10 @@ public class EventBusImpl implements EventBus {
 
 
   @SuppressWarnings("unchecked")
-  private <T> void removeLocalRegistration(String address,
+  private <T> HandlerHolder removeLocalRegistration(String address,
       HandlerRegistration<T> handler) {
     Handlers handlers = handlerMap.get(address);
+    HandlerHolder lastHolder = null;
     if (handlers != null) {
       synchronized (handlers) {
         int size = handlers.list.size();
@@ -185,6 +187,7 @@ public class EventBusImpl implements EventBus {
             holder.setRemoved();
             if (handlers.list.isEmpty()) {
               handlerMap.remove(address);
+              lastHolder = holder;
             }
             holder.getContext().removeCloseHook(
                 new HandlerEntry<>(address, holder.getHandler()));
@@ -193,18 +196,28 @@ public class EventBusImpl implements EventBus {
         }
       }
     }
+    return lastHolder;
   }
 
-  protected <T> void addRegistration(String address,
+  private <T> void addRegistration(String address,
       HandlerRegistration<T> registration,
       boolean replyHandler, boolean localOnly) {
     Objects.requireNonNull(registration.getHandler(), "handler");
-    addLocalRegistration(address, registration,
+    boolean newAddress = addLocalRegistration(address, registration,
         replyHandler, localOnly);
-    registration.setResult(Future.succeededFuture());
+
+    addRegistration(newAddress, address, replyHandler, localOnly,
+        registration::setResult);
   }
 
-  private <T> void addLocalRegistration(String address,
+  protected <T> void addRegistration(boolean newAddress, String address,
+      boolean replyHandler, boolean localOnly,
+      Handler<AsyncResult<Void>> completionHandler) {
+    completionHandler.handle(Future.succeededFuture());
+  }
+
+
+  private <T> boolean addLocalRegistration(String address,
       HandlerRegistration<T> registration, boolean replyHandler,
       boolean localOnly) {
     Objects.requireNonNull(address, "address");
@@ -219,13 +232,14 @@ public class EventBusImpl implements EventBus {
         localOnly, context);
 
     Handlers handlers = handlerMap.get(address);
-
+    boolean newAddress = false;
     if (handlers == null) {
       handlers = new Handlers();
       Handlers preHandlers = handlerMap.putIfAbsent(address, handlers);
       if (preHandlers != null) {
         handlers = preHandlers;
       }
+      newAddress = true;
     }
     handlers.list.add(holder);
 
@@ -233,7 +247,7 @@ public class EventBusImpl implements EventBus {
       HandlerEntry entry = new HandlerEntry<>(address, registration);
       context.addCloseHook(entry);
     }
-
+    return newAddress;
   }
 
   public <T> void sendReply(MessageImpl replyMessage,
@@ -248,6 +262,12 @@ public class EventBusImpl implements EventBus {
           .next();
     }
   }
+
+  protected <T> void sendReply(SendContextImpl<T> sendContext,
+      MessageImpl replierMessage) {
+    sendOrPub(sendContext);
+  }
+
 
   private <T> HandlerRegistration<T> createReplyHandlerRegistration(
       MessageImpl message,
@@ -330,7 +350,8 @@ public class EventBusImpl implements EventBus {
     }
   }
 
-  MessageImpl createMessage(boolean isSend, String address, MultiMap headers,
+  protected MessageImpl createMessage(boolean isSend, String address,
+      MultiMap headers,
       Object body, String codecName) {
     Objects.requireNonNull(address, "address");
     MessageCodec codec = codecManager.lookupCodec(body, codecName);
@@ -340,11 +361,11 @@ public class EventBusImpl implements EventBus {
     return msg;
   }
 
-  protected  <T> void sendOrPub(SendContextImpl<T> sendContext) {
+  protected <T> void sendOrPub(SendContextImpl<T> sendContext) {
     deliverMessageLocally(sendContext);
   }
 
-  protected  <T> void deliverMessageLocally(SendContextImpl<T> sendContext) {
+  protected <T> void deliverMessageLocally(SendContextImpl<T> sendContext) {
     if (!deliverMessageLocally(sendContext.message)) {
       if (sendContext.handlerRegistration != null) {
         sendContext.handlerRegistration.sendAsyncResultFailure(
@@ -355,7 +376,7 @@ public class EventBusImpl implements EventBus {
   }
 
   @SuppressWarnings("unchecked")
-  private boolean deliverMessageLocally(MessageImpl msg) {
+  protected boolean deliverMessageLocally(MessageImpl msg) {
     msg.setBus(this);
     Handlers handlers = handlerMap.get(msg.address());
     if (handlers != null) {

@@ -51,10 +51,6 @@ public interface EventBus {
 
   EventBus unregisterCodec(String name);
 
-  <T> EventBus registerDefaultCodec(Class<T> clazz, MessageCodec<T, ?> codec);
-
-  EventBus unregisterDefaultCodec(Class clazz);
-
   void start(Handler<AsyncResult<Void>> completionHandler);
 
   void close(Handler<AsyncResult<Void>> completionHandler);

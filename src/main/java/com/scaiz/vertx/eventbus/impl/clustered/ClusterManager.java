@@ -1,5 +1,6 @@
 package com.scaiz.vertx.eventbus.impl.clustered;
 
+import com.scaiz.vertx.Vertx;
 import com.scaiz.vertx.async.AsyncResult;
 import com.scaiz.vertx.async.Handler;
 import com.scaiz.vertx.support.AsyncMultiMap;
@@ -10,5 +11,9 @@ public interface ClusterManager {
       Handler<AsyncResult<AsyncMultiMap<K, V>>> resultHandler);
 
   String getNodeID();
+
+  void setVertx(Vertx vertx);
+
+  void join(Handler<AsyncResult<Void>> resultHandler);
 }
 

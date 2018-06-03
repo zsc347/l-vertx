@@ -2,12 +2,16 @@ package com.scaiz.vertx.eventbus.impl;
 
 import com.scaiz.vertx.eventbus.MessageCodec;
 import com.scaiz.vertx.eventbus.codecs.IntCodec;
+import com.scaiz.vertx.eventbus.codecs.PingMessageCodec;
 import com.scaiz.vertx.eventbus.codecs.StringCodec;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public class CodecManager {
+
+  public static final MessageCodec<String, String> PING_MESSAGE_CODEC =
+      new PingMessageCodec();
 
   private static final MessageCodec<String, String>
       STRING_MESSAGE_CODEC = new StringCodec();
@@ -19,7 +23,8 @@ public class CodecManager {
 
   private final MessageCodec[] systemCodes = new MessageCodec[]{
       STRING_MESSAGE_CODEC,
-      INTEGER_MESSAGE_CODEC
+      INTEGER_MESSAGE_CODEC,
+      PING_MESSAGE_CODEC
   };
 
   public MessageCodec lookupCodec(Object body, String codecName) {

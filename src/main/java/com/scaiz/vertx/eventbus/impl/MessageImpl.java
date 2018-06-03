@@ -26,6 +26,10 @@ public class MessageImpl<U, V> implements Message<V> {
 
   protected boolean send;
 
+  public MessageImpl() {
+
+  }
+
   protected MessageImpl(String address, String replyAddress,
       MultiMap headers, U sendBody, MessageCodec codec, boolean send,
       EventBusImpl eventBus) {
@@ -128,5 +132,9 @@ public class MessageImpl<U, V> implements Message<V> {
 
   public void setReplyAddress(String replyAddress) {
     this.replyAddress = replyAddress;
+  }
+
+  public MessageCodec<U,V> codec() {
+    return messageCodec;
   }
 }

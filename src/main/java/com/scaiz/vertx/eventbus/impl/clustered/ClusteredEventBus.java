@@ -5,10 +5,14 @@ import com.scaiz.vertx.VertxOptions;
 import com.scaiz.vertx.async.AsyncResult;
 import com.scaiz.vertx.async.Future;
 import com.scaiz.vertx.async.Handler;
+import com.scaiz.vertx.buffer.Buffer;
 import com.scaiz.vertx.container.Context;
 import com.scaiz.vertx.container.VertxInternal;
 import com.scaiz.vertx.eventbus.EventBusOptions;
+import com.scaiz.vertx.eventbus.HandlerHolder;
 import com.scaiz.vertx.eventbus.Message;
+import com.scaiz.vertx.eventbus.MessageCodec;
+import com.scaiz.vertx.eventbus.impl.CodecManager;
 import com.scaiz.vertx.eventbus.impl.EventBusImpl;
 import com.scaiz.vertx.eventbus.impl.MessageImpl;
 import com.scaiz.vertx.json.JsonObject;
@@ -16,12 +20,19 @@ import com.scaiz.vertx.net.NetServer;
 import com.scaiz.vertx.net.NetServerOptions;
 import com.scaiz.vertx.net.NetSocket;
 import com.scaiz.vertx.net.impl.ServerID;
+import com.scaiz.vertx.parsetools.RecordParser;
 import com.scaiz.vertx.support.AsyncMultiMap;
 import com.scaiz.vertx.support.ChoosableIterable;
+import com.scaiz.vertx.support.MultiMap;
+import java.util.Collections;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public class ClusteredEventBus extends EventBusImpl {
+
+  private static final Buffer PONG = Buffer.buffer(new byte[]{(byte) 1});
 
   private EventBusOptions options;
 
@@ -33,6 +44,8 @@ public class ClusteredEventBus extends EventBusImpl {
 
   private final ConcurrentMap<ServerID, ConnectionHolder> connections
       = new ConcurrentHashMap<>();
+  private Set<String> ownSubs = Collections
+      .newSetFromMap(new ConcurrentHashMap<>());
   private final Context sendNoContext;
 
   private AsyncMultiMap<String, ClusterNodeInfo> subs;
@@ -89,6 +102,63 @@ public class ClusteredEventBus extends EventBusImpl {
   }
 
   @Override
+  protected MessageImpl createMessage(boolean send, String address,
+      MultiMap headers, Object body, String codecName) {
+    Objects.requireNonNull(address, "no null address accepted");
+    MessageCodec codec = codecManager.lookupCodec(body, codecName);
+    @SuppressWarnings("unchecked")
+    ClusteredMessage msg = new ClusteredMessage(serverID, address, null,
+        headers, body, codec, send, this);
+    return msg;
+  }
+
+
+  @Override
+  protected <T> void addRegistration(boolean newAddress, String address,
+      boolean replyHandler, boolean localOnly,
+      Handler<AsyncResult<Void>> completionHandler) {
+    if (newAddress && subs != null && !replyHandler && !localOnly) {
+      subs.add(address, nodeInfo, completionHandler);
+      ownSubs.add(address);
+    } else {
+      completionHandler.handle(Future.succeededFuture());
+    }
+  }
+
+  @Override
+  protected <T> void removeRegistration(
+      HandlerHolder lastHolder,
+      String address,
+      Handler<AsyncResult<Void>> completionHandler) {
+    if (lastHolder != null && subs != null && !lastHolder.isLocalOnly()) {
+      ownSubs.remove(address);
+      removeSub(address, nodeInfo, completionHandler);
+    } else {
+      callCompletionHandlerAsync(completionHandler);
+    }
+  }
+
+  private void removeSub(String subName, ClusterNodeInfo node,
+      Handler<AsyncResult<Void>> completionHandler) {
+    subs.remove(subName, node, ar -> {
+      if (!ar.succeeded()) {
+        System.err.println("Failed to remove sub :" + ar.cause().getMessage());
+        ar.cause().printStackTrace();
+      } else {
+        if (ar.result()) {
+          if (completionHandler != null) {
+            completionHandler.handle(Future.succeededFuture());
+          }
+        } else {
+          if (completionHandler != null) {
+            completionHandler.handle(Future.failureFuture("subs not found"));
+          }
+        }
+      }
+    });
+  }
+
+  @Override
   public void close(Handler<AsyncResult<Void>> completionHandler) {
     super.close(ar1 -> {
       if (server != null) {
@@ -112,6 +182,24 @@ public class ClusteredEventBus extends EventBusImpl {
     });
   }
 
+
+  @Override
+  protected <T> void sendReply(SendContextImpl<T> sendContext,
+      MessageImpl replierMessage) {
+    clusteredSendReply(((ClusteredMessage) replierMessage).getSender(),
+        sendContext);
+  }
+
+  private <T> void clusteredSendReply(ServerID replyDest,
+      SendContextImpl<T> sendContext) {
+    MessageImpl message = (MessageImpl) sendContext.message();
+    String address = message.address();
+    if (!replyDest.equals(serverID)) {
+      sendRemote(replyDest, message);
+    } else {
+      deliverMessageLocally(sendContext);
+    }
+  }
 
   @Override
   protected <T> void sendOrPub(SendContextImpl<T> sendContext) {
@@ -140,7 +228,6 @@ public class ClusteredEventBus extends EventBusImpl {
 
   private <T> void sendToSubs(ChoosableIterable<ClusterNodeInfo> subs,
       SendContextImpl<T> sendContext) {
-    String address = sendContext.message().address();
     if (sendContext.message().isSend()) {
       ClusterNodeInfo ci = subs.choose();
       ServerID sid = ci == null ? null : ci.getServerID();
@@ -205,7 +292,42 @@ public class ClusteredEventBus extends EventBusImpl {
 
   private Handler<NetSocket> getServerHandler() {
     return socket -> {
+      RecordParser parser = RecordParser.newFixed(4);
+      Handler<Buffer> handler = new Handler<Buffer>() {
+        int size = -1;
 
+        @Override
+        public void handle(Buffer buff) {
+          if (size == -1) {
+            size = buff.getInt(0);
+            parser.fixedSizeMode(size);
+          } else {
+            ClusteredMessage received = new ClusteredMessage();
+            received.readFromWire(buff, codecManager);
+            parser.fixedSizeMode(4);
+            size = -1;
+            if (received.codec() == CodecManager.PING_MESSAGE_CODEC) {
+              socket.write(PONG);
+            } else {
+              deliverMessageLocally(received);
+            }
+          }
+        }
+      };
+      parser.setOutput(handler);
+      socket.handler(parser);
     };
+  }
+
+  ConcurrentMap<ServerID, ConnectionHolder> getConnections() {
+    return connections;
+  }
+
+  VertxInternal vertx() {
+    return vertx;
+  }
+
+  EventBusOptions options() {
+    return options;
   }
 }
