@@ -1,5 +1,7 @@
 package com.scaiz.vertx.net;
 
+import com.scaiz.vertx.json.JsonObject;
+
 public class NetClientOptions {
 
   public NetClientOptions() {
@@ -7,6 +9,10 @@ public class NetClientOptions {
   }
 
   public NetClientOptions(NetClientOptions options) {
+
+  }
+
+  public NetClientOptions(JsonObject entries) {
 
   }
 

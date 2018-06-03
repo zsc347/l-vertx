@@ -171,14 +171,8 @@ public class ClusteredEventBus extends EventBusImpl {
   @Override
   protected <T> void sendReply(SendContextImpl<T> sendContext,
       MessageImpl replierMessage) {
-    clusteredSendReply(((ClusteredMessage) replierMessage).getSender(),
-        sendContext);
-  }
-
-  private <T> void clusteredSendReply(ServerID replyDest,
-      SendContextImpl<T> sendContext) {
+    ServerID replyDest = ((ClusteredMessage) replierMessage).getSender();
     MessageImpl message = (MessageImpl) sendContext.message();
-    String address = message.address();
     if (!replyDest.equals(serverID)) {
       sendRemote(replyDest, message);
     } else {

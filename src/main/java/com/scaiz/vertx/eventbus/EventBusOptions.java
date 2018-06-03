@@ -1,6 +1,6 @@
 package com.scaiz.vertx.eventbus;
 
-import com.scaiz.vertx.net.NetServerOptions;
+import com.scaiz.vertx.json.JsonObject;
 
 public class EventBusOptions {
 
@@ -12,7 +12,11 @@ public class EventBusOptions {
     return 8089;
   }
 
-  public NetServerOptions toJson() {
+  public JsonObject toJson() {
     return null;
+  }
+
+  public long getClusterPingInterval() {
+    return 1000;
   }
 }
