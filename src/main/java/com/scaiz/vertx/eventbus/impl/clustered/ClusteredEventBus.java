@@ -15,7 +15,6 @@ import com.scaiz.vertx.eventbus.MessageCodec;
 import com.scaiz.vertx.eventbus.impl.CodecManager;
 import com.scaiz.vertx.eventbus.impl.EventBusImpl;
 import com.scaiz.vertx.eventbus.impl.MessageImpl;
-import com.scaiz.vertx.json.JsonObject;
 import com.scaiz.vertx.net.NetServer;
 import com.scaiz.vertx.net.NetServerOptions;
 import com.scaiz.vertx.net.NetSocket;
@@ -24,9 +23,7 @@ import com.scaiz.vertx.parsetools.RecordParser;
 import com.scaiz.vertx.support.AsyncMultiMap;
 import com.scaiz.vertx.support.ChoosableIterable;
 import com.scaiz.vertx.support.MultiMap;
-import java.util.Collections;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -37,15 +34,10 @@ public class ClusteredEventBus extends EventBusImpl {
   private EventBusOptions options;
 
   private final ClusterManager clusterManager;
-  private final HAManager haManager;
-
   private static final String SUBS_MAP_NAME = "__vertx.subs";
-  private static final String SERVER_ID_HA_KEY = "server_id";
 
   private final ConcurrentMap<ServerID, ConnectionHolder> connections
       = new ConcurrentHashMap<>();
-  private Set<String> ownSubs = Collections
-      .newSetFromMap(new ConcurrentHashMap<>());
   private final Context sendNoContext;
 
   private AsyncMultiMap<String, ClusterNodeInfo> subs;
@@ -55,11 +47,10 @@ public class ClusteredEventBus extends EventBusImpl {
 
 
   public ClusteredEventBus(VertxInternal vertx, VertxOptions vertxOptions,
-      ClusterManager clusterManager, HAManager haManager) {
+      ClusterManager clusterManager) {
     super(vertx);
     this.options = vertxOptions.getEventBusOptions();
     this.clusterManager = clusterManager;
-    this.haManager = haManager;
     this.sendNoContext = vertx.getOrCreateContext();
   }
 
@@ -86,10 +77,6 @@ public class ClusteredEventBus extends EventBusImpl {
                 serverID = new ServerID(serverPort, serverHost);
                 nodeInfo = new ClusterNodeInfo(clusterManager.getNodeID(),
                     serverID);
-                haManager.addDataToHAInfo(SERVER_ID_HA_KEY,
-                    new JsonObject()
-                        .put("host", serverID.getHost())
-                        .put("port", serverID.getPort()));
                 started = true;
               } else {
                 errorHandler.handle(ar.cause());
@@ -119,7 +106,6 @@ public class ClusteredEventBus extends EventBusImpl {
       Handler<AsyncResult<Void>> completionHandler) {
     if (newAddress && subs != null && !replyHandler && !localOnly) {
       subs.add(address, nodeInfo, completionHandler);
-      ownSubs.add(address);
     } else {
       completionHandler.handle(Future.succeededFuture());
     }
@@ -131,7 +117,6 @@ public class ClusteredEventBus extends EventBusImpl {
       String address,
       Handler<AsyncResult<Void>> completionHandler) {
     if (lastHolder != null && subs != null && !lastHolder.isLocalOnly()) {
-      ownSubs.remove(address);
       removeSub(address, nodeInfo, completionHandler);
     } else {
       callCompletionHandlerAsync(completionHandler);
