@@ -2,6 +2,7 @@ package com.scaiz.vertx.container;
 
 import com.scaiz.vertx.Vertx;
 import com.scaiz.vertx.async.AsyncResult;
+import com.scaiz.vertx.async.Future;
 import com.scaiz.vertx.async.Handler;
 import com.scaiz.vertx.container.impl.ContextImpl;
 import com.scaiz.vertx.net.impl.NetServerImpl;

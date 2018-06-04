@@ -27,7 +27,7 @@ public class ConnectionHolder {
 
   private static final String PING_ADDRESS = "__vertx_ping";
 
-  public ConnectionHolder(ClusteredEventBus clusteredEventBus,
+  ConnectionHolder(ClusteredEventBus clusteredEventBus,
       ServerID serverID, EventBusOptions options) {
     this.eventBus = clusteredEventBus;
     this.serverID = serverID;
