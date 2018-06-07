@@ -1,5 +1,6 @@
 package com.scaiz.vertx;
 
+import com.scaiz.vertx.async.AsyncResult;
 import com.scaiz.vertx.async.Handler;
 import com.scaiz.vertx.container.Context;
 import com.scaiz.vertx.container.VertxThread;
@@ -39,5 +40,11 @@ public interface Vertx {
 
   default NetClient createNetClient() {
     return createNetClient(new NetClientOptions());
+  }
+
+  void close(Handler<AsyncResult<Void>> completionHandler);
+
+  default void close() {
+    close(null);
   }
 }

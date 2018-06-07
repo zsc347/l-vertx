@@ -8,6 +8,7 @@ import com.scaiz.vertx.async.Handler;
 import com.scaiz.vertx.container.Context;
 import com.scaiz.vertx.container.VertxInternal;
 import com.scaiz.vertx.container.impl.BlockedThreadChecker;
+import com.scaiz.vertx.container.impl.CloseHooks;
 import com.scaiz.vertx.container.impl.ContextImpl;
 import com.scaiz.vertx.container.impl.EventLoopContext;
 import com.scaiz.vertx.container.impl.MultiThreadWorkerContext;
@@ -23,18 +24,23 @@ import com.scaiz.vertx.net.NetClientOptions;
 import com.scaiz.vertx.net.NetServer;
 import com.scaiz.vertx.net.NetServerOptions;
 import com.scaiz.vertx.net.impl.NetClientImpl;
-import com.scaiz.vertx.net.resolver.AddressResolver;
 import com.scaiz.vertx.net.impl.NetServerImpl;
 import com.scaiz.vertx.net.impl.ServerID;
+import com.scaiz.vertx.net.resolver.AddressResolver;
 import com.scaiz.vertx.net.transport.Transport;
 import io.netty.channel.EventLoopGroup;
 import io.netty.resolver.AddressResolverGroup;
+import io.netty.util.concurrent.GenericFutureListener;
 import java.net.InetAddress;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class VertxImpl implements VertxInternal {
 
@@ -50,8 +56,14 @@ public class VertxImpl implements VertxInternal {
   private final Map<ServerID, NetServerImpl> sharedNetServers = new HashMap<>();
 
   private final AddressResolver addressResolver;
-
   private final ClusterManager clusterManager;
+
+  private boolean closed;
+
+  private final CloseHooks closeHooks;
+
+  private BlockedThreadChecker checker;
+  private ThreadFactory eventLoopThreadFactory;
 
   public VertxImpl() {
     this(new VertxOptions(), null);
@@ -70,9 +82,11 @@ public class VertxImpl implements VertxInternal {
       transport = Transport.JDK;
     }
 
-    BlockedThreadChecker checker = new BlockedThreadChecker(
+    closeHooks = new CloseHooks();
+
+    checker = new BlockedThreadChecker(
         options.getBlockedThreadCheckInterval());
-    ThreadFactory eventLoopThreadFactory = new VertxThreadFactory(
+    eventLoopThreadFactory = new VertxThreadFactory(
         "vert.x-eventloop-thread-",
         checker, false, options.getMaxEventLoopExecuteTime());
     eventLoopGroup = transport.eventLoopGroup(options.getEventLoopPoolSize(),
@@ -209,6 +223,66 @@ public class VertxImpl implements VertxInternal {
   }
 
   @Override
+  public void close(Handler<AsyncResult<Void>> completionHandler) {
+    if (closed || eventBus == null) {
+      if (completionHandler != null) {
+        completionHandler.handle(Future.succeededFuture());
+      }
+      return;
+    }
+    closed = true;
+    closeHooks.run(ar -> {
+      addressResolver.close(ar2 -> {
+        eventBus.close(ar3 -> {
+          closeClusterManager(ar4 -> {
+            Set<NetServer> netServers = new HashSet<>(
+                sharedNetServers.values());
+            netServers.clear();
+
+            int serverCount = netServers.size();
+            AtomicInteger serverCloseCount = new AtomicInteger();
+
+            Handler<AsyncResult<Void>> serverCloseHandler = res -> {
+              if (res.failed()) {
+                System.err.println("Failed in shutting down server: "
+                    + res.cause().getMessage());
+                res.cause().printStackTrace();
+              }
+              if (serverCloseCount.incrementAndGet() == serverCount) {
+                shutdown(completionHandler);
+              }
+            };
+            for (NetServer server : netServers) {
+              server.close(serverCloseHandler);
+            }
+            if (serverCount == 0) {
+              shutdown(completionHandler);
+            }
+          });
+        });
+      });
+    });
+  }
+
+  // deleteCacheDirAndShutDown
+  @SuppressWarnings("unchecked")
+  private void shutdown(Handler<AsyncResult<Void>> completionHandler) {
+    workerPool.close();
+    internalBlockingPool.close();
+
+    eventLoopGroup.shutdownGracefully(0, 10, TimeUnit.SECONDS)
+        .addListener((GenericFutureListener) future -> {
+              checker.close();
+              if (completionHandler != null) {
+                eventLoopThreadFactory.newThread(
+                    () -> completionHandler.handle(Future.succeededFuture()))
+                    .start();
+              }
+            }
+        );
+  }
+
+  @Override
   public EventLoopGroup getEventLoopGroup() {
     return eventLoopGroup;
   }
@@ -257,7 +331,9 @@ public class VertxImpl implements VertxInternal {
     if (clusterManager != null) {
       clusterManager.leave(ar -> {
         if (ar.failed()) {
-
+          System.err.println("Failed to leave cluster " +
+              ar.cause().getMessage());
+          ar.cause().printStackTrace();
         }
         if (completionHandler != null) {
           runOnContext(v -> completionHandler.handle(Future.succeededFuture()));

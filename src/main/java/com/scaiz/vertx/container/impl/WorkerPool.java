@@ -14,7 +14,7 @@ public class WorkerPool {
     return pool;
   }
 
-  void close() {
+  public void close() {
     pool.shutdown();
   }
 }

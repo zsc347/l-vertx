@@ -28,7 +28,7 @@ public class CloseHooks {
   }
 
 
-  void run(Handler<AsyncResult<Void>> completeHandler) {
+  public void run(Handler<AsyncResult<Void>> completeHandler) {
 
     Set<Closeable> copy = null;
     synchronized (this) {

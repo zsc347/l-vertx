@@ -43,4 +43,8 @@ public class AddressResolver {
   public AddressResolverGroup<InetSocketAddress> nettyAddressResolverGroup() {
     return resolverGroup;
   }
+
+  public void close(Handler<Void> doneHandler) {
+    provider.close(doneHandler);
+  }
 }
