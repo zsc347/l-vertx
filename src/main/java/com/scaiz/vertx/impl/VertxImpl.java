@@ -251,4 +251,20 @@ public class VertxImpl implements VertxInternal {
       return new WorkerContext(this, tccl, internalBlockingPool, workerPool);
     }
   }
+
+  private void closeClusterManager(
+      Handler<AsyncResult<Void>> completionHandler) {
+    if (clusterManager != null) {
+      clusterManager.leave(ar -> {
+        if (ar.failed()) {
+
+        }
+        if (completionHandler != null) {
+          runOnContext(v -> completionHandler.handle(Future.succeededFuture()));
+        }
+      });
+    } else if (completionHandler != null) {
+      runOnContext(v -> completionHandler.handle(Future.succeededFuture()));
+    }
+  }
 }

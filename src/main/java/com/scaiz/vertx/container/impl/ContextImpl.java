@@ -151,6 +151,12 @@ public abstract class ContextImpl implements Context {
         internalOrderedTasks, resultHandler);
   }
 
+  public <T> void executeBlocking(Handler<Future<T>> blockingCodeHandler,
+      TaskQueue queue, Handler<AsyncResult<T>> resultHandler) {
+    executeBlocking(null, blockingCodeHandler, workerPool.executor(),
+        queue, resultHandler);
+  }
+
   @Override
   public <T> void executeBlocking(Handler<Future<T>> blockingCodeHandler,
       boolean ordered, Handler<AsyncResult<T>> resultHandler) {

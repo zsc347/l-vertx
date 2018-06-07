@@ -10,7 +10,7 @@ public class TaskQueue {
 
   private Executor current;
 
-  TaskQueue() {
+  public TaskQueue() {
     this.runner = this::run;
   }
 
