@@ -18,9 +18,7 @@ import org.junit.Test;
 
 public class EventBusImplTest {
 
-  private Vertx vertx;
   private EventBus eventBus;
-
 
   @Before
   public void setUp() {

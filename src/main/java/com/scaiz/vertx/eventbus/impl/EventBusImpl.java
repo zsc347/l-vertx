@@ -199,7 +199,7 @@ public class EventBusImpl implements EventBus {
     return lastHolder;
   }
 
-  private <T> void addRegistration(String address,
+  public <T> void addRegistration(String address,
       HandlerRegistration<T> registration,
       boolean replyHandler, boolean localOnly) {
     Objects.requireNonNull(registration.getHandler(), "handler");

@@ -78,6 +78,10 @@ public class ClusteredEventBus extends EventBusImpl {
                 nodeInfo = new ClusterNodeInfo(clusterManager.getNodeID(),
                     serverID);
                 started = true;
+                if (resultHandler != null) {
+                  resultHandler.handle(Future.succeededFuture());
+                }
+
               } else {
                 errorHandler.handle(ar.cause());
               }

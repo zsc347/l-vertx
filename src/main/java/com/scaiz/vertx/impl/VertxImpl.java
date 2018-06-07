@@ -28,6 +28,7 @@ import com.scaiz.vertx.net.impl.NetServerImpl;
 import com.scaiz.vertx.net.impl.ServerID;
 import com.scaiz.vertx.net.resolver.AddressResolver;
 import com.scaiz.vertx.net.transport.Transport;
+import com.scaiz.vertx.spi.ServiceHelper;
 import io.netty.channel.EventLoopGroup;
 import io.netty.resolver.AddressResolverGroup;
 import io.netty.util.concurrent.GenericFutureListener;
@@ -69,7 +70,7 @@ public class VertxImpl implements VertxInternal {
     this(new VertxOptions(), null);
   }
 
-  private VertxImpl(VertxOptions options,
+  public VertxImpl(VertxOptions options,
       Handler<AsyncResult<Vertx>> resultHandler) {
     Transport nativeTransport = Transport.nativeTransport();
     if (nativeTransport != null && nativeTransport.isAvailable()) {
@@ -129,9 +130,29 @@ public class VertxImpl implements VertxInternal {
   private ClusterManager getClusterManager(VertxOptions options) {
     if (options.isClustered()) {
       if (options.getClusteredManger() != null) {
-
+        return options.getClusteredManger();
+      } else {
+        ClusterManager mgr;
+        String clusterManagerClassName = System
+            .getProperty("vertx.cluster.managerClass");
+        if (clusterManagerClassName != null) {
+          // We allow specify a sys prop for the cluster manager factory which overrides ServiceLoader
+          try {
+            Class<?> clazz = Class.forName(clusterManagerClassName);
+            mgr = (ClusterManager) clazz.newInstance();
+          } catch (Exception e) {
+            throw new IllegalStateException(
+                "Failed to instantiate " + clusterManagerClassName, e);
+          }
+        } else {
+          mgr = ServiceHelper.loadFactoryOrNull(ClusterManager.class);
+          if (mgr == null) {
+            throw new IllegalStateException(
+                "No ClusterManagerFactory instances found on classpath");
+          }
+        }
+        return mgr;
       }
-      return null;
     } else {
       return null;
     }

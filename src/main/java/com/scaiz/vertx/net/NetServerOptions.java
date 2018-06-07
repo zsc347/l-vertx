@@ -4,12 +4,18 @@ import com.scaiz.vertx.json.JsonObject;
 
 public class NetServerOptions {
 
+  private int port;
+
+  public void setPort(int port) {
+    this.port = port;
+  }
+
   public NetServerOptions() {
 
   }
 
   public NetServerOptions(NetServerOptions options) {
-
+    this.port = options.port;
   }
 
   public NetServerOptions(JsonObject json) {

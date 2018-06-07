@@ -7,6 +7,13 @@ import com.scaiz.vertx.net.resolver.AddressResolverOptions;
 public class VertxOptions {
 
   private ClusterManager clusterManager;
+  private boolean clustered;
+
+  public VertxOptions() {
+    this.clustered = Boolean.parseBoolean(
+        System.getProperty("vert.option.isCluster", "false"));
+  }
+
 
   public long getBlockedThreadCheckInterval() {
     return 20 * 1000000; // ns
@@ -40,14 +47,12 @@ public class VertxOptions {
     return new EventBusOptions();
   }
 
-  public boolean isClustered() {
-    return Boolean.parseBoolean(
-        System.getProperty("vert.option.isCluster", "false"));
+  public void setClustered(boolean clustered) {
+    this.clustered = clustered;
   }
 
-  public boolean isHAEnabled() {
-    return Boolean.parseBoolean(
-        System.getProperty("vert.option.ha", "false"));
+  public boolean isClustered() {
+    return clustered;
   }
 
   public ClusterManager getClusteredManger() {
