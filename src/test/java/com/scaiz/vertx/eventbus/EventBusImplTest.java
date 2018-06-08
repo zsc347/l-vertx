@@ -10,10 +10,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class EventBusImplTest {
@@ -29,7 +26,7 @@ public class EventBusImplTest {
   @Test
   public void testSendAndReceive() {
     final List<String> consumed = new LinkedList<>();
-    eventBus.consumer("test.address", message -> {
+    eventBus.localConsumer("test.address", message -> {
       consumed.add((String) message.body());
     });
 
@@ -59,7 +56,7 @@ public class EventBusImplTest {
   public void testSender() {
     CountDownLatch latch = new CountDownLatch(1);
     final List<String> consumed = new LinkedList<>();
-    eventBus.consumer("test.address",
+    eventBus.localConsumer("test.address",
         message -> consumed.add((String) message.body()));
     MessageProducer<String> sender = eventBus.sender("test.address");
     sender.send("message", reply -> {
@@ -86,7 +83,7 @@ public class EventBusImplTest {
     final List<String> consumed = new LinkedList<>();
     MessageProducer<String> publisher = eventBus.publisher("test.address");
     for (int i = 0; i < 3; i++) {
-      eventBus.consumer("test.address",
+      eventBus.localConsumer("test.address",
           message -> consumed.add((String) message.body()));
     }
     publisher.send("send");
@@ -100,7 +97,7 @@ public class EventBusImplTest {
   public void testReply() {
     final List<String> replied = new LinkedList<>();
     CountDownLatch latch = new CountDownLatch(1);
-    eventBus.consumer("test.address",
+    eventBus.localConsumer("test.address",
         message -> message.reply("reply-message"));
     eventBus.send("test.address", "should got reply message",
         new DeliveryOptions(),

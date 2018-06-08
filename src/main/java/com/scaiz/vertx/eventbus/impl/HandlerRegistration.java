@@ -26,6 +26,7 @@ public class HandlerRegistration<T> implements MessageConsumer<T>,
   private final String repliedAddress;
   private final EventBusImpl eventBus;
   private final Queue<Message<T>> pending = new ArrayDeque<>(8);
+  private final boolean localOnly;
 
   private int maxBufferedMessages = DEFAULT_MAX_BUFFERED_MESSAGES;
   private AsyncResult<Void> result;
@@ -45,18 +46,20 @@ public class HandlerRegistration<T> implements MessageConsumer<T>,
   public HandlerRegistration(Vertx vertx,
       String address,
       String repliedAddress,
+      boolean localOnly,
       EventBusImpl eventBus,
       Handler<AsyncResult<Message<T>>> asyncResultHandler,
       long timeout) {
     this.vertx = vertx;
     this.address = address;
     this.repliedAddress = repliedAddress;
+    this.localOnly = localOnly;
     this.eventBus = eventBus;
     this.asyncResultHandler = asyncResultHandler;
 
     if (timeout != -1) {
-      timeoutID = vertx
-          .setTimer(timeout, tid -> sendAsyncResultFailure(ReplyFailure.TIMEOUT,
+      timeoutID = vertx.setTimer(timeout,
+          tid -> sendAsyncResultFailure(ReplyFailure.TIMEOUT,
               "Timed out after waiting " + timeout
                   + "(ms) for a reply. address: " + address
                   + ", repliedAddress: " + repliedAddress));

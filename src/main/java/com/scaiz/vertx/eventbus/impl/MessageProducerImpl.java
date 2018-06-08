@@ -36,7 +36,7 @@ public class MessageProducerImpl<T> implements MessageProducer<T> {
     this.send = send;
     if (send) {
       String creditAddress = UUID.randomUUID().toString() + "-credit";
-      creditConsumer = bus.consumer(creditAddress,
+      creditConsumer = bus.localConsumer(creditAddress,
           msg -> doReceiveCredit(msg.body()));
       options.addHeader(CREDIT_ADDRESS_HEADER_NAME, creditAddress);
     } else {

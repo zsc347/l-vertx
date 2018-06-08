@@ -74,11 +74,11 @@ public class EventBusImpl implements EventBus {
 
 
   @Override
-  public <T> MessageConsumer<T> consumer(String address,
+  public <T> MessageConsumer<T> localConsumer(String address,
       Handler<Message<T>> handler) {
     assertStarted();
     MessageConsumer<T> consumer = new HandlerRegistration<>(vertx, address,
-        null, this, null, -1);
+        null, true, this, null, -1);
     if (handler != null) {
       consumer.handler(handler);
     }
@@ -278,7 +278,7 @@ public class EventBusImpl implements EventBus {
       message.setReplyAddress(replyAddress);
       Handler<Message<T>> simpleReplyHandler = convertHandler(replyHandler);
       HandlerRegistration<T> registration = new HandlerRegistration<>(vertx,
-          replyAddress, message.address(), this, replyHandler, timeout);
+          replyAddress, message.address(), true, this, replyHandler, timeout);
       registration.handler(simpleReplyHandler);
       return registration;
     }

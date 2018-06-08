@@ -3,7 +3,6 @@ package com.scaiz.vertx.eventbus;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import com.scaiz.vertx.Vertx;
 import com.scaiz.vertx.VertxOptions;
 import com.scaiz.vertx.eventbus.cluster.FakeClusterManager;
 import com.scaiz.vertx.impl.VertxImpl;
@@ -42,14 +41,18 @@ public class ClusteredEventBusImplTest {
   @Test
   public void testSendAndReceive() {
     final List<String> consumed = new LinkedList<>();
-    eventBus.consumer("cluster.address", message ->
-        consumed.add((String) message.body()));
-
     CountDownLatch latch = new CountDownLatch(1);
+
+    eventBus.localConsumer("cluster.address", message -> {
+      System.out.println(message);
+      consumed.add((String) message.body());
+      latch.countDown();
+    });
+
     eventBus.send("cluster.address", "message1");
 
     try {
-      latch.await(20, TimeUnit.MILLISECONDS);
+      latch.await(20, TimeUnit.MINUTES);
     } catch (Exception ignore) {
       fail();
     }
