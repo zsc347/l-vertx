@@ -81,7 +81,6 @@ public class ClusteredEventBus extends EventBusImpl {
                 if (resultHandler != null) {
                   resultHandler.handle(Future.succeededFuture());
                 }
-
               } else {
                 errorHandler.handle(ar.cause());
               }

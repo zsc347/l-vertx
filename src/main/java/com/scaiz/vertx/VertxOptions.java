@@ -1,5 +1,6 @@
 package com.scaiz.vertx;
 
+import com.scaiz.vertx.eventbus.EventBus;
 import com.scaiz.vertx.eventbus.EventBusOptions;
 import com.scaiz.vertx.eventbus.impl.clustered.ClusterManager;
 import com.scaiz.vertx.net.resolver.AddressResolverOptions;
@@ -8,10 +9,12 @@ public class VertxOptions {
 
   private ClusterManager clusterManager;
   private boolean clustered;
+  private EventBusOptions eventBusOptions;
 
   public VertxOptions() {
     this.clustered = Boolean.parseBoolean(
         System.getProperty("vert.option.isCluster", "false"));
+    eventBusOptions = new EventBusOptions();
   }
 
 
@@ -44,7 +47,7 @@ public class VertxOptions {
   }
 
   public EventBusOptions getEventBusOptions() {
-    return new EventBusOptions();
+    return eventBusOptions;
   }
 
   public void setClustered(boolean clustered) {

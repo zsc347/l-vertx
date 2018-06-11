@@ -77,7 +77,7 @@ public class HandlerRegistration<T> implements MessageConsumer<T>,
     this.handler = handler;
     if (this.handler != null && !registered) {
       registered = true;
-      eventBus.addRegistration(address, this, repliedAddress != null, true);
+      eventBus.addRegistration(address, this, repliedAddress != null, localOnly);
     } else if (this.handler == null && registered) {
       this.unregister();
     }

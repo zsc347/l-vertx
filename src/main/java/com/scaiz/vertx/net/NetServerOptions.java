@@ -19,7 +19,9 @@ public class NetServerOptions {
   }
 
   public NetServerOptions(JsonObject json) {
-
+    if (json.getValue("port") instanceof Number) {
+      this.setPort(((Number) json.getValue("port")).intValue());
+    }
   }
 
   public int getIdleTimeout() {
@@ -27,7 +29,7 @@ public class NetServerOptions {
   }
 
   public int getPort() {
-    return 8086;
+    return port;
   }
 
   public String getHost() {

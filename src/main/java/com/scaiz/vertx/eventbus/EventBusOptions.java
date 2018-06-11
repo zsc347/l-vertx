@@ -4,16 +4,32 @@ import com.scaiz.vertx.json.JsonObject;
 
 public class EventBusOptions {
 
+  private int port;
+
+  public EventBusOptions() {
+    port = 8086;
+  }
+
+  public void setPort(int port) {
+    this.port = port;
+  }
+
+  public int getPort() {
+    return port;
+  }
+
   public String getClusterPublicHost() {
     return "127.0.0.1";
   }
 
   public int getClusterPublicPort() {
-    return 8089;
+    return port;
   }
 
   public JsonObject toJson() {
-    return null;
+    JsonObject json = new JsonObject();
+    json.put("port", port);
+    return json;
   }
 
   public long getClusterPingInterval() {

@@ -72,6 +72,19 @@ public class EventBusImpl implements EventBus {
     return this;
   }
 
+  @Override
+  public <T> MessageConsumer<T> consumer(String address,
+      Handler<Message<T>> handler) {
+    assertStarted();
+    Objects.requireNonNull("address");
+    MessageConsumer<T> consumer = new HandlerRegistration<>(vertx, address,
+        null, false, this, null, -1);
+    if (handler != null) {
+      consumer.handler(handler);
+    }
+    return consumer;
+  }
+
 
   @Override
   public <T> MessageConsumer<T> localConsumer(String address,
