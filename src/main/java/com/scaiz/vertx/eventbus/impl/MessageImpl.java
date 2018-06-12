@@ -100,9 +100,8 @@ public class MessageImpl<U, V> implements Message<V> {
   public <R> void reply(Object message, DeliveryOptions options,
       Handler<AsyncResult<Message<R>>> replyHandler) {
     if (replyAddress != null) {
-      sendReply(
-          bus.createMessage(true, replyAddress, options.getHeaders(), message,
-              options.getCodecName()), options, replyHandler);
+      sendReply(bus.createMessage(true, replyAddress, options.getHeaders(),
+          message, options.getCodecName()), options, replyHandler);
     }
   }
 

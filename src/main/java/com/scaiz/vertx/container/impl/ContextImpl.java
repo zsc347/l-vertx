@@ -223,6 +223,9 @@ public abstract class ContextImpl implements Context {
         }
         if (handler != null) {
           handler.handle(t);
+        } else {
+          System.err.println("Error occur in context " + t.getMessage());
+          t.printStackTrace();
         }
       } finally {
         if (!DISABLE_TIMINGS) {

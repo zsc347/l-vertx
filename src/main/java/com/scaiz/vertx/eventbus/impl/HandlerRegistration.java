@@ -246,6 +246,9 @@ public class HandlerRegistration<T> implements MessageConsumer<T>,
     if (completionHandler != null) {
       Handler<AsyncResult<Void>> callback = completionHandler;
       vertx.runOnContext(v -> callback.handle(result));
+    } else if (result.failed()) {
+      System.err.println(result.cause().getMessage());
+      result.cause().printStackTrace();
     }
   }
 

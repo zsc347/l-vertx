@@ -8,7 +8,6 @@ import com.scaiz.vertx.eventbus.impl.MessageImpl;
 import com.scaiz.vertx.net.impl.ServerID;
 import com.scaiz.vertx.support.CaseInsensitiveHeaders;
 import com.scaiz.vertx.support.MultiMap;
-import com.sun.security.ntlm.Server;
 import io.netty.util.CharsetUtil;
 import java.util.List;
 import java.util.Map.Entry;

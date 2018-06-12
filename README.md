@@ -1,5 +1,4 @@
 # l-vertx
 
-A copy of Eclipse Vert.x, learn by copy and implement it.
+A copy of Eclipse Vert.x.
 
-With some features implement by my own.

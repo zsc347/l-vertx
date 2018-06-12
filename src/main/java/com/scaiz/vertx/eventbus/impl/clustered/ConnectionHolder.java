@@ -40,9 +40,9 @@ public class ConnectionHolder {
     if (connected) {
       throw new IllegalStateException("Already connected");
     }
-    connected = true;
     client.connect(serverID.getPort(), serverID.getHost(), res -> {
       if (res.succeeded()) {
+        connected = true;
         this.socket = res.result();
         socket.exceptionHandler(t -> close());
         socket.closeHandler(v -> close());
@@ -101,7 +101,7 @@ public class ConnectionHolder {
     if (connected) {
       socket.write(message.encodeToWire());
     } else {
-      if (pending != null) {
+      if (pending == null) {
         pending = new ArrayDeque<>();
       }
       pending.add(message);

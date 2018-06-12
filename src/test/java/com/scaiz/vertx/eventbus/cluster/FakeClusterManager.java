@@ -172,6 +172,7 @@ public class FakeClusterManager implements ClusterManager {
           }
         }
         vals.add(v);
+        fut.complete(null);
       }, taskQueue, completionHandler);
     }
 

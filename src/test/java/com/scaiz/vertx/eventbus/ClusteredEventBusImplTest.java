@@ -67,17 +67,25 @@ public class ClusteredEventBusImplTest {
     CountDownLatch latch = new CountDownLatch(1);
 
     eventBus.consumer("cluster.address", message -> {
-      System.out.println(message);
+      consumed.add((String)message.body());
+      message.reply("reply message");
     }).completionHandler(ar -> {
       if (!ar.succeeded()) {
         System.err.println("register failed");
       } else {
         System.out.println("register succeed");
       }
-      latch.countDown();
     });
 
-    eventBus2.send("cluster.address", "message1");
+    eventBus2.send("cluster.address", "message1", reply -> {
+      if (reply.succeeded()) {
+        latch.countDown();
+        System.out.println(reply.result().body());
+      } else {
+        System.err.println("error occur");
+      }
+    });
+
     try {
       latch.await(20, TimeUnit.MINUTES);
     } catch (Exception ignore) {
