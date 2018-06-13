@@ -60,7 +60,7 @@ public class HandlerHolder<T> {
     return handler;
   }
 
-  public boolean isReplyHander() {
+  public boolean isReplyHandler() {
     return isReplyHandler;
   }
 

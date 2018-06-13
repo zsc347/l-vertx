@@ -121,7 +121,7 @@ public class MessageImpl<U, V> implements Message<V> {
   private <R> void sendReply(MessageImpl msg, DeliveryOptions options,
       Handler<AsyncResult<Message<R>>> replyHandler) {
     if (bus != null) {
-      bus.sendReply(msg, options, replyHandler);
+      bus.sendReply(msg,this, options, replyHandler);
     }
   }
 

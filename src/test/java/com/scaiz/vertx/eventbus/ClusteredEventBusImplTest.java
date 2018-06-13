@@ -1,5 +1,6 @@
 package com.scaiz.vertx.eventbus;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -8,6 +9,8 @@ import com.scaiz.vertx.VertxOptions;
 import com.scaiz.vertx.eventbus.cluster.FakeClusterManager;
 import com.scaiz.vertx.eventbus.impl.clustered.ClusterManager;
 import com.scaiz.vertx.impl.VertxImpl;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -67,32 +70,50 @@ public class ClusteredEventBusImplTest {
     CountDownLatch latch = new CountDownLatch(1);
 
     eventBus.consumer("cluster.address", message -> {
-      consumed.add((String)message.body());
-      message.reply("reply message");
+      consumed.add((String) message.body());
+      System.out.println(message.body());
+
+      message.reply("reply-1", ar -> {
+        if (ar.succeeded()) {
+          Message replyMessage = ar.result();
+          consumed.add((String) replyMessage.body());
+          System.out.println(replyMessage.body());
+          latch.countDown();
+        } else {
+          ar.cause().printStackTrace();
+          latch.countDown();
+        }
+      });
     }).completionHandler(ar -> {
       if (!ar.succeeded()) {
-        System.err.println("register failed");
-      } else {
-        System.out.println("register succeed");
+        ar.cause().printStackTrace();
+        latch.countDown();
       }
     });
 
-    eventBus2.send("cluster.address", "message1", reply -> {
+    eventBus2.send("cluster.address", "origin-message", reply -> {
       if (reply.succeeded()) {
-        latch.countDown();
-        System.out.println(reply.result().body());
+        Message message = reply.result();
+        consumed.add((String) message.body());
+        message.reply("reply-2");
+        System.out.println(message.body());
       } else {
-        System.err.println("error occur");
+        latch.countDown();
+        reply.cause().printStackTrace();
       }
     });
 
     try {
-      latch.await(20, TimeUnit.MINUTES);
+      latch.await(20, TimeUnit.SECONDS);
     } catch (Exception ignore) {
       fail();
     }
 
-    assertTrue(consumed.size() == 1);
-    assertTrue(consumed.contains("message1"));
+
+    List<String> check = Arrays.asList("origin-message", "reply-1", "reply-2");
+    assertEquals(check.size(), consumed.size());
+    for(int i = 0; i < check.size(); i++) {
+      assertEquals(consumed.get(i), check.get(i));
+    }
   }
 }

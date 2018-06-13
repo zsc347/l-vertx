@@ -256,14 +256,19 @@ public class EventBusImpl implements EventBus {
     }
     handlers.list.add(holder);
 
-    if (hasContext) {
-      HandlerEntry entry = new HandlerEntry<>(address, registration);
-      context.addCloseHook(entry);
-    }
+    // TODO debug and check why need the has context check in vertx
+    // if (haContext) in vertx source code
+    // but why need this check ?
+    // the first time to add local registration do not need
+    // to add close hook? seems nonsense
+    HandlerEntry entry = new HandlerEntry<>(address, registration);
+    context.addCloseHook(entry);
+
     return newAddress;
   }
 
   public <T> void sendReply(MessageImpl replyMessage,
+      MessageImpl replierMessage,
       DeliveryOptions options,
       Handler<AsyncResult<Message<T>>> replyHandler) {
     if (replyMessage.address() == null) {
@@ -271,6 +276,9 @@ public class EventBusImpl implements EventBus {
     } else {
       HandlerRegistration<T> replyHandlerRegistration = createReplyHandlerRegistration(
           replyMessage, options, replyHandler);
+      new ReplySendContextImpl<>(replyMessage, options,
+          replyHandlerRegistration, replierMessage).next();
+
       new SendContextImpl<>(replyMessage, options, replyHandlerRegistration)
           .next();
     }
@@ -312,7 +320,7 @@ public class EventBusImpl implements EventBus {
     };
   }
 
-  private String generateReplyAddress() {
+  protected String generateReplyAddress() {
     return Long.toString(replySequence.incrementAndGet());
   }
 
@@ -418,7 +426,7 @@ public class EventBusImpl implements EventBus {
           holder.getHandler().handle(copied);
         }
       } finally {
-        if (holder.isReplyHander()) {
+        if (holder.isReplyHandler()) {
           holder.getHandler().unregister();
         }
       }
@@ -469,6 +477,33 @@ public class EventBusImpl implements EventBus {
     @Override
     public Object sentBody() {
       return message.sendBody();
+    }
+  }
+
+  private class ReplySendContextImpl<T> extends SendContextImpl<T> {
+
+    private final MessageImpl replierMessage;
+
+    ReplySendContextImpl(
+        MessageImpl replyMessage, DeliveryOptions options,
+        HandlerRegistration<T> replyHandlerRegistration,
+        MessageImpl replierMessage) {
+      super(replyMessage, options, replyHandlerRegistration);
+      this.replierMessage = replierMessage;
+    }
+
+    @Override
+    public void next() {
+      if (iter.hasNext()) {
+        Handler<SendContext> handler = iter.next();
+        try {
+          handler.handle(this);
+        } catch (Throwable t) {
+          System.err.println("Failure in interceptor" + t.getMessage());
+        }
+      } else {
+        sendReply(this, replierMessage);
+      }
     }
   }
 }

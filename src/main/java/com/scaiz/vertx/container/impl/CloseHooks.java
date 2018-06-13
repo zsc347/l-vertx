@@ -24,7 +24,9 @@ public class CloseHooks {
 
 
   public void remove(Closeable hook) {
-    closeHooks.remove(hook);
+    if (closeHooks != null) {
+      closeHooks.remove(hook);
+    }
   }
 
 

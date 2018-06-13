@@ -24,6 +24,7 @@ import com.scaiz.vertx.support.AsyncMultiMap;
 import com.scaiz.vertx.support.ChoosableIterable;
 import com.scaiz.vertx.support.MultiMap;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -246,6 +247,11 @@ public class ClusteredEventBus extends EventBusImpl {
       }
     }
     holder.writeMessage((ClusteredMessage) message);
+  }
+
+  @Override
+  protected String generateReplyAddress() {
+    return UUID.randomUUID().toString();
   }
 
   @Override
