@@ -16,11 +16,15 @@ public class CustomJavaFileObject implements JavaFileObject {
   private final Kind kind;
   private final URI uri;
 
-  public CustomJavaFileObject(URI uri, Kind kind, String binayName) {
+  public CustomJavaFileObject(URI uri, Kind kind, String binaryName) {
     this.uri = uri;
     this.kind = kind;
-    this.binaryName = binayName;
+    this.binaryName = binaryName;
 
+  }
+
+  public String binaryName() {
+    return binaryName;
   }
 
   @Override
@@ -30,8 +34,9 @@ public class CustomJavaFileObject implements JavaFileObject {
 
   @Override
   public boolean isNameCompatible(String simpleName, Kind kind) {
-    String name  = simpleName + kind.extension;
-    return (name.equals(toUri().getPath()) || toUri().getPath().endsWith('/' + name)) && kind.equals(getKind());
+    String name = simpleName + kind.extension;
+    return (name.equals(toUri().getPath()) || toUri().getPath()
+        .endsWith('/' + name)) && kind.equals(getKind());
   }
 
   @Override
@@ -92,6 +97,6 @@ public class CustomJavaFileObject implements JavaFileObject {
 
   @Override
   public String toString() {
-    return getClass().getName() + '['+ toUri() +']';
+    return getClass().getName() + '[' + toUri() + ']';
   }
 }

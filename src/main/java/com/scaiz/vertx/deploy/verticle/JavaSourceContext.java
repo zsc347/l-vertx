@@ -6,12 +6,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import javax.tools.JavaFileObject.Kind;
 
-public class JavaSourceContext {
+class JavaSourceContext {
 
   private final String className;
   private final File sourceRoot;
 
-  public JavaSourceContext(File file) {
+  JavaSourceContext(File file) {
     String packageName = parsePackage(file);
 
     File rootDirectory = file.getParentFile();
@@ -42,11 +42,11 @@ public class JavaSourceContext {
   }
 
 
-  public File getSourceRoot() {
+  File getSourceRoot() {
     return sourceRoot;
   }
 
-  public String getClassName() {
+  String getClassName() {
     return className;
   }
 
@@ -70,5 +70,4 @@ public class JavaSourceContext {
       throw new RuntimeException(e);
     }
   }
-
 }

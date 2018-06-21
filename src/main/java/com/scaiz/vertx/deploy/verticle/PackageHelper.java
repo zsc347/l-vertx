@@ -14,17 +14,17 @@ import java.util.jar.JarEntry;
 import javax.tools.JavaFileObject;
 import javax.tools.JavaFileObject.Kind;
 
-public class PackageHelper {
+class PackageHelper {
 
   private final static String CLASS_FILE = ".class";
 
   private final ClassLoader classLoader;
 
-  public PackageHelper(ClassLoader classLoader) {
+  PackageHelper(ClassLoader classLoader) {
     this.classLoader = classLoader;
   }
 
-  public List<JavaFileObject> find(String packageName) throws IOException {
+  List<JavaFileObject> find(String packageName) throws IOException {
     String javaPackageName = packageName.replaceAll("\\.", "/");
     List<JavaFileObject> result = new ArrayList<>();
 
@@ -52,10 +52,10 @@ public class PackageHelper {
     List<JavaFileObject> result = new ArrayList<>();
     for (File childFile : directory.listFiles()) {
       if (childFile.isFile() && childFile.getName().endsWith(CLASS_FILE)) {
-        String binayName = packageName + "." + childFile.getName()
+        String binaryName = packageName + "." + childFile.getName()
             .replaceAll(CLASS_FILE + "$", "");
         result.add(
-            new CustomJavaFileObject(childFile.toURI(), Kind.CLASS, binayName));
+            new CustomJavaFileObject(childFile.toURI(), Kind.CLASS, binaryName));
       }
     }
     return result;
